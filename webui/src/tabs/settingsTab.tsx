@@ -113,7 +113,7 @@ export default class SettingsTab extends AbstractTab<SettingsTabState> {
             <details class="form-group" >
                 <summary>Client</summary>
                 <div class="form-v" >
-                    <TextInput size={10} label="SSID" valueList={state.wifiList.map(list => list.name)} onChange={(elm) => this.#patchWIFIField(false, "name", elm.value)} >
+                    <TextInput size={10} label="SSID" value={this.state.WIFIClient?.name} valueList={state.wifiList.map(list => list.name)} onChange={(elm) => this.#patchWIFIField(false, "name", elm.value)} >
                         <button onClick={this.#onScanClick.bind(this)} {...((state.scanInProgress || state.busy) && { disabled: true })} >{state.scanInProgress ? "Scanning" : "Scan"}</button>
                     </TextInput>
 
@@ -127,7 +127,7 @@ export default class SettingsTab extends AbstractTab<SettingsTabState> {
                 <summary>Virtual Access Point</summary>
                 <div class=" form-v" >
                     <TextInput size={16} label="SSID" value={this.state.WIFIvirtualAccessPoint?.name} onChange={(elm: HTMLInputElement) => this.#patchWIFIField(true, "name", elm.value)} />
-                    <DropDown label="Security" items={this.state.WIFIvirtualAccessPoint.supportedSecurityTypes ?? []} onChange={(val) => this.#patchWIFIField(true, "securityType", val)} />
+                    <DropDown label="Security" selectedItem={this.state.WIFIvirtualAccessPoint?.securityType} items={this.state.WIFIvirtualAccessPoint.supportedSecurityTypes ?? []} onChange={(val) => this.#patchWIFIField(true, "securityType", val)} />
                     <TextInput size={16} type="password" label="Passphrase" onChange={(elm: HTMLInputElement) => this.#patchWIFIField(true, "psk", elm.value)} />
                     <CheckBox label="Always Enabled" onChange={() => { }} />
                     <div>
