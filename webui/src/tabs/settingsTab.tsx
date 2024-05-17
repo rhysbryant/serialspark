@@ -28,7 +28,6 @@ interface SettingsTabState {
 
 export default class SettingsTab extends AbstractTab<SettingsTabState> {
     #wifiSettings = new WiFiSettings("")
-    #securityTypes = ["WPA3", "WPA2", "WPA", "Open"]
     constructor(props) {
         super(props);
         this.state = {
