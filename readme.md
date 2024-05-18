@@ -47,11 +47,15 @@ Tested on a esp-wroom-32 dev board
 
 
 ## building ##
- * backend
-   `platformio run --environment esp32`
-### frontend ###
+
+### Web UI ###
+ 
+ within webui directory
+
  * install dependencies with `npm install`
-  
-* to build `npm run build` 
+ * to build `npm run build` 
   this will package the webUI files into a header file called `webui_files.h` this file is then included in the backend build
  * local testing `npm run dev`
+
+### Device Firmware
+   `platformio run --environment esp32`
