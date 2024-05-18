@@ -1,1 +1,6 @@
-backend/build/*
+backend/.pio
+backend/.vscode
+backend/include/webui_files.h
+webui/node_modules
+webui/dist
+webui/package-lock.json
