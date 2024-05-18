@@ -15,7 +15,6 @@
  along with serialspark. If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 #include "WifiManager.h"
 #include "esp_log.h"
 
@@ -255,12 +254,12 @@ void WIfiManager::wifiConfigRequestPUT(Request *req, Response *resp)
                     strcpy((char *)staCfg.sta.password, network.psk);
                 }
 
-                if (esp_wifi_set_config(WIFI_IF_STA, &staCfg) == ESP_OK)
+                auto setConfigResult = esp_wifi_set_config(WIFI_IF_STA, &staCfg) if (setConfigResult == ESP_OK)
                 {
                 }
                 else
                 {
-                    staError = "set config failed";
+                    staError = esp_err_to_name(setConfigResult);
                 }
             }
             else
@@ -310,12 +309,13 @@ void WIfiManager::wifiConfigRequestPUT(Request *req, Response *resp)
                     apCfg.ap.authmode = (wifi_auth_mode_t)network.authType;
                 }
 
-                if (esp_wifi_set_config(WIFI_IF_AP, &apCfg) == ESP_OK)
+                auto setConfigResult = esp_wifi_set_config(WIFI_IF_AP, &apCfg);
+                if (setConfigResult == ESP_OK)
                 {
                 }
                 else
                 {
-                    apError = "set config failed";
+                    apError = esp_err_to_name(setConfigResult);
                 }
             }
             else
@@ -382,8 +382,8 @@ void WIfiManager::wifiScanRequest(Request *req, Response *resp)
             {
                 auto wifiEntry = cJSON_CreateObject();
 
-                auto n = WifiNetwork{ssid : (const char *)(const char *)records[i].ssid, 
-                authType : records[i].authmode};
+                auto n = WifiNetwork{ssid : (const char *)(const char *)records[i].ssid,
+                                     authType : records[i].authmode};
                 writeWifiNetworkToJSON(wifiEntry, &n);
 
                 cJSON_AddNumberToObject(wifiEntry, "signalInfo", records[i].rssi);

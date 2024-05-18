@@ -75,7 +75,19 @@ export class WiFiSettings {
 
             fetch(this.#baseURL + "/wifi", { method: "PUT", body: JSON.stringify({ [key]: network }) }).then(result => {
                 if (result.ok) {
-                    resolve();
+                    result.json().then(val => {
+                        if (!val[key]) {
+                            reject("unexpected response");
+                            return;
+                        }
+
+                        const { success, message } = val[key];
+                        if(!success){
+                            reject(message||"wifi config update failed");
+                        }else{
+                            resolve();
+                        }
+                    }).catch(reason => reject(reason))
                 }
             }).catch(reason => reject(reason));
         })

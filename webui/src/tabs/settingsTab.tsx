@@ -84,7 +84,7 @@ export default class SettingsTab extends AbstractTab<SettingsTabState> {
 
         this.#wifiSettings.setSavedNetwork(NetworkType.AP, payload).then(() => {
             this.props.postStatusUpdate('operation', "completed");
-        }).catch(e => this.props.postStatusUpdate('operation', e.toString()))
+        }).catch(e => this.props.postStatusUpdate('operation', "Error: " + e.toString()))
             .finally(() => {
                 this.setState({ busy: false });
             });
