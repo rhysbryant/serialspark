@@ -254,10 +254,8 @@ void WIfiManager::wifiConfigRequestPUT(Request *req, Response *resp)
                     strcpy((char *)staCfg.sta.password, network.psk);
                 }
 
-                auto setConfigResult = esp_wifi_set_config(WIFI_IF_STA, &staCfg) if (setConfigResult == ESP_OK)
-                {
-                }
-                else
+                auto setConfigResult = esp_wifi_set_config(WIFI_IF_STA, &staCfg);
+                if (setConfigResult != ESP_OK)
                 {
                     staError = esp_err_to_name(setConfigResult);
                 }
@@ -310,10 +308,7 @@ void WIfiManager::wifiConfigRequestPUT(Request *req, Response *resp)
                 }
 
                 auto setConfigResult = esp_wifi_set_config(WIFI_IF_AP, &apCfg);
-                if (setConfigResult == ESP_OK)
-                {
-                }
-                else
+                if (setConfigResult != ESP_OK)
                 {
                     apError = esp_err_to_name(setConfigResult);
                 }

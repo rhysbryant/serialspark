@@ -54,7 +54,6 @@ static void start_stop_handler(void *arg, esp_event_base_t event_base,
     {
        // Server::start();
         esp_wifi_set_ps(WIFI_PS_NONE);
-        SimpleHTTP::Server::listen(81);
     }
     else
     {
@@ -129,7 +128,7 @@ void app_main(void)
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    SimpleHTTP::Server::listen(81);
+    SimpleHTTP::Server::listen(80);
 
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, event_handler, 0));
 
