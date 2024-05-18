@@ -34,6 +34,7 @@ extern "C"
 
 #include "PortManager.h"
 #include "Server.h"
+#include "Router.h"
 #include "SimpleHTTPWebSocketClient.h"
 #include <esp_task_wdt.h>
 #include "WebsocketManager.h"
@@ -71,7 +72,7 @@ void http_server_thread(void *arg)
 
     while (1)
     {
-        SimpleHTTP::Server::process();
+        SimpleHTTP::Router::process();
         SimpleHTTP::WebsocketManager::process();
         vTaskDelay(1);
     }
@@ -143,11 +144,11 @@ void app_main(void)
     SimpleHTTP::EmbeddedFilesHandler::addFiles((SimpleHTTP::EmbeddedFile *)files,
      sizeof(files) / sizeof(FileContent),(SimpleHTTP::EmbeddedFileType*)filesType);
     
-    SimpleHTTP::Server::setDefaultHandler(SimpleHTTP::EmbeddedFilesHandler::embeddedFilesHandler);
-    SimpleHTTP::Server::addHandler("/wifi", WIfiManager::wifiConfigRequest);
-    SimpleHTTP::Server::addHandler("/wifi/scan", WIfiManager::wifiScanRequest);
+    SimpleHTTP::Router::setDefaultHandler(SimpleHTTP::EmbeddedFilesHandler::embeddedFilesHandler);
+    SimpleHTTP::Router::addHandler("/wifi", WIfiManager::wifiConfigRequest);
+    SimpleHTTP::Router::addHandler("/wifi/scan", WIfiManager::wifiScanRequest);
 
-    SimpleHTTP::Server::addHandler("/ws", [](SimpleHTTP::Request *req, SimpleHTTP::Response *resp)
+    SimpleHTTP::Router::addHandler("/ws", [](SimpleHTTP::Request *req, SimpleHTTP::Response *resp)
     {
        auto c = new SimpleHTTPWebSocketClient(resp->hijackConnection());
        resp->setSessionArg(c);
