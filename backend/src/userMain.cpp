@@ -31,7 +31,7 @@ extern "C"
 #include <sys/param.h>
     void app_main(void);
 }
-#include "ESPHTTPServer.h"
+
 #include "PortManager.h"
 #include "Server.h"
 #include "SimpleHTTPWebSocketClient.h"
