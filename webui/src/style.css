@@ -1,0 +1,131 @@
+/*
+ Copyright (c) 2024 Rhys Bryant
+
+ serialspark is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ serialspark is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with serialspark. If not, see <https://www.gnu.org/licenses/>.
+ */
+body {
+	background: #000000f0;
+	font-family: Arial;
+}
+
+div.tab,
+#container,
+#status {
+	border: #2272FF 2px;
+	border-style: solid;
+	color: #FFFFFF;
+	background-color: #010107d9;
+	padding: 10px;
+	margin-left: 2px;
+}
+
+div#status {
+	padding: 2px;
+	margin-top: 4px;
+	font-size: 12px;
+}
+
+div#status span {
+	padding-right: 5px;
+	border-right: 1px;
+}
+
+div#status>span {
+	padding-right: 10px;
+	border-left: 2px;
+	display: table-cell;
+}
+
+#container>div {
+	display: none;
+}
+
+#container>div.currentContainer {
+	display: block;
+}
+
+div.tab {
+	display: inline-block;
+
+	border-top-left-radius: 24px;
+	border-top-right-radius: 24px;
+	border-bottom-left-radius: 0px;
+	border-bottom-right-radius: 0px;
+	font-weight: bold;
+	margin-top: 2px;
+}
+
+div.tab>div {
+	font-size: 12px;
+	font-weight: normal;
+	height: 12px;
+}
+
+div.tab:hover,
+#tabs div.tabSelected {
+	background-color: #8f8f8f54;
+	cursor: grabbing;
+	border-bottom-width: 10px;
+	margin-bottom: 0px;
+}
+
+.form-v div select,
+.form-v div label,
+.form-v div input,
+.form-v div button {
+	display: table-cell;
+	margin: 5px;
+}
+
+.form-v div {
+	display: table-row;
+}
+
+.col {
+	display: table-cell;
+	border-width: 1px;
+	border-left-style: solid;
+	border-top-style: solid;
+	text-align: center;
+	padding: 2px
+}
+
+.col:last-child {
+	border-right-style: solid;
+}
+
+.row {
+	display: table-row;
+	border: 1px solid;
+}
+
+.row:last-child>div {
+	border-bottom-style: solid;
+}
+
+div#displayDataTable {
+	display: table;
+}
+
+.form-group {
+	display: table;
+	border: #2272FF 1px solid;
+	padding: 10px;
+	margin: 5px;
+	border-radius: 2px;
+}
+
+details.form-group {
+	display: inline-block;
+}
