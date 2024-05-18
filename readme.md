@@ -48,6 +48,11 @@ Tested on a esp-wroom-32 dev board
 
 ## building ##
 
+### First Run ###
+
+By default the network broadcast by the ESP is open. Connect to this network. 
+go to the IP address of the ESP and on the settings tab update the security for the virtual access point. To join to a network on this tab update the 'Client' details
+
 ### Web UI ###
  
  within webui directory
