@@ -140,9 +140,9 @@ export class SerialClient {
 
     #sendCommandVoidResponse(cmdId: number, payload?: Uint8Array | Array<any>) {
         return new Promise<void>((resolve, reject) => {
-            this.#sendCommand(cmdId,payload)
-            .then(r => resolve())
-            .catch(e => reject(e))
+            this.#sendCommand(cmdId, payload)
+                .then(r => resolve())
+                .catch(e => reject(e))
         })
     }
     /**
@@ -182,6 +182,28 @@ export class SerialClient {
      */
     async onAsyncData(f: AsyncResponse) {
         this.#asyncNewDataEvent.push(f);
+    }
+    /**
+     * calls startAsyncRead() and returns a reader
+     * @returns ReadableStream bytes type
+     */
+    getReaderStream(): ReadableStream {
+        const sc = this;
+        let callback;
+        return new ReadableStream<Uint8Array>({
+            type: "bytes",
+            start(controller) {
+                callback = (data) => controller.enqueue(new Uint8Array(data))
+                sc.onAsyncData(callback);
+                sc.startAsyncRead();
+            },
+            cancel(reason) {
+                sc.#asyncNewDataEvent = sc.#asyncNewDataEvent.filter(item => item != callback);
+                if (sc.#asyncNewDataEvent.length == 0) {
+                    sc.stopAsyncRead();
+                }
+            }
+        });
     }
     /**
      * starts async sending of data

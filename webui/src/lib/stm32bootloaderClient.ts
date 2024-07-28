@@ -124,9 +124,11 @@ export default class Stm32BootLoaderClient {
 
     #timeout = 5000;
     #client: SerialClient
+    #streamReader: ReadableStreamBYOBReader
 
     constructor(client: SerialClient) {
         this.#client = client;
+        this.#streamReader = client.getReaderStream().getReader({ mode: "byob" });
     }
 
     #getCheckSum(data: Array<any> | Uint8Array, initial = 0xFF): number {
@@ -169,7 +171,34 @@ export default class Stm32BootLoaderClient {
     }
 
     async #read(length: number) {
-        return this.#client.read(length, this.#timeout)
+        return new Promise<ArrayBuffer>(async (resolve, reject) => {
+            const timer = setTimeout(() => {
+                reject("read timeout");
+            }, this.#timeout);
+            let buffer = new ArrayBuffer(length);
+            let offset =0;
+
+            const cb = (result: ReadableStreamReadResult<Uint8Array>) => {
+
+                offset += result.value.length;
+                buffer = result.value.buffer;
+
+                if(result.done || (length - offset) == 0){
+                    clearTimeout(timer);
+                    resolve(new Uint8Array(buffer).buffer);
+                }else{
+                    this.#streamReader.read(new Uint8Array(buffer,offset,length - offset)).then(cb).catch(e => {
+                        clearTimeout(timer);
+                        reject(e);
+                    })
+                }
+            }
+
+            this.#streamReader.read(new Uint8Array(buffer)).then(cb).catch(e => {
+                clearTimeout(timer);
+                reject(e);
+            })
+        });
     }
 
     async #write(payload: any[] | Uint8Array) {
