@@ -353,6 +353,88 @@ export default class Stm32BootLoaderClient {
         });
     }
     /**
+     * read intel hex file and merges Data records where the address sequential
+     * up to the max size
+     * @param buffer buffer containing the contents of an intel hex formatted file
+     * @param maxRecordSize the max size of a merged Data record
+     * @returns Promise, array of intel hex records 
+     */
+    async #optimizedIntelHex(buffer: ArrayBuffer,maxRecordSize=255) {
+        return new Promise<Array<IntelHEXRecord>>(async (resolve, reject) => {
+            const intelHEXDecoder = new IntelHEXDecoder(buffer);
+            let extendedAddress = 0;
+            let output = new Array<IntelHEXRecord>();
+
+            let lastDataRecord: IntelHEXRecord = null;
+            let combinedData = new Uint8Array(maxRecordSize);
+            let combinedDataOffset = 0;
+            let combinedDataStartAddress = null;
+
+            const pushCombinedData = () => {
+                if( combinedDataOffset == 0 ){
+                    return;
+                }
+
+                output.push({
+                    type: IntelHEXRecordType.Data,
+                    address: combinedDataStartAddress,
+                    data: combinedData.subarray(0, combinedDataOffset)
+                });
+                combinedData = new Uint8Array(maxRecordSize);
+                combinedDataStartAddress = null;
+                combinedDataOffset = 0;
+            }
+
+            try {
+                while (intelHEXDecoder.next()) {
+                    const record = intelHEXDecoder.record
+                    switch (record.type) {
+                        case IntelHEXRecordType.Data:
+                            const addrContinues = lastDataRecord != null &&
+                                extendedAddress + record.address == lastDataRecord.address + lastDataRecord.data.length;
+
+                            if (addrContinues) {
+                                if (combinedDataStartAddress == null) {
+                                    combinedDataStartAddress = lastDataRecord.address;
+                                }
+                                if (combinedDataOffset + lastDataRecord.data.length >= maxRecordSize) {
+                                    pushCombinedData();
+                                    combinedDataStartAddress = lastDataRecord.address;
+                                }
+                                combinedData.set(lastDataRecord.data, combinedDataOffset);
+                                combinedDataOffset += lastDataRecord.data.length;
+                            }
+                            else if (lastDataRecord != null) {
+                                output.push(lastDataRecord);
+                            }
+
+
+
+                            lastDataRecord = {
+                                type: record.type,
+                                address: extendedAddress + record.address,
+                                data: record.data
+                            };
+                            break;
+                        case IntelHEXRecordType.ExtendedLinearAddress:
+                            pushCombinedData();
+                            extendedAddress = IntelHEXDecoder.addressFromData(record);
+                            break;
+                        default:
+                            pushCombinedData();
+                            output.push(record);
+                    }
+
+                }
+                resolve(output);
+            } catch (e) {
+                reject(e);
+            }
+
+        });
+    }
+
+    /**
      * parses and uploads contents of a intel .hex file
      * @param buffer buffer containing the contents of an intel hex formatted file
      * @param progressCallback called once a record is processed
@@ -361,17 +443,17 @@ export default class Stm32BootLoaderClient {
     async writeFromIntelHEX(buffer: ArrayBuffer, progressCallback: (percent: number) => void) {
         return new Promise<number>(async (resolve, reject) => {
             const intelHEXDecoder = new IntelHEXDecoder(buffer);
-            let extendedAddress = 0;
             let startAddress = 0;
             try {
-                while (intelHEXDecoder.next()) {
-                    const record = intelHEXDecoder.record
+                const records = await this.#optimizedIntelHex(buffer);
+
+                const progressDiv = 100 / records.length;
+
+                for (let i = 0; i < records.length; i++) {
+                    const record = records[i];
                     switch (record.type) {
                         case IntelHEXRecordType.Data:
-                            await this.writeMemory(extendedAddress + record.address, record.data);
-                            break;
-                        case IntelHEXRecordType.ExtendedLinearAddress:
-                            extendedAddress = IntelHEXDecoder.addressFromData(record);
+                            await this.writeMemory(record.address, record.data);
                             break;
                         case IntelHEXRecordType.StartLinearAddress:
                             startAddress = IntelHEXDecoder.addressFromData(record);
@@ -393,22 +475,22 @@ export default class Stm32BootLoaderClient {
 
     async verifyWithIntelHEX(buffer: ArrayBuffer, progressCallback: (percent: number) => void) {
         return new Promise<number>(async (resolve, reject) => {
-            const intelHEXDecoder = new IntelHEXDecoder(buffer);
-            let extendedAddress = 0;
             let startAddress = 0;
             try {
-                while (intelHEXDecoder.next()) {
-                    const record = intelHEXDecoder.record
+                const records = await this.#optimizedIntelHex(buffer);
+
+                const progressDiv = 100 / records.length;
+
+                for (let i = 0; i < records.length; i++) {
+                    const record = records[i];
+
                     switch (record.type) {
                         case IntelHEXRecordType.Data:
-                            const data = new Uint8Array(await this.readMemory(extendedAddress + record.address, record.data.byteLength));
+                            const data = new Uint8Array(await this.readMemory(record.address, record.data.byteLength));
                             if (data.length != record.data.byteLength || data.some((value, index) => record.data[index] != value)) {
-                                reject("mismatch at address " + (extendedAddress + record.address));
+                                reject("mismatch at address " + (record.address));
                                 return;
                             }
-                            break;
-                        case IntelHEXRecordType.ExtendedLinearAddress:
-                            extendedAddress = IntelHEXDecoder.addressFromData(record);
                             break;
                         case IntelHEXRecordType.StartLinearAddress:
                             startAddress = IntelHEXDecoder.addressFromData(record);
@@ -420,7 +502,7 @@ export default class Stm32BootLoaderClient {
                             reject("record type not supported");
                             return;
                     }
-                    progressCallback(intelHEXDecoder.lengthRead);
+                    progressCallback(progressDiv*i);
                 }
                 resolve(startAddress);
             } catch (e) {

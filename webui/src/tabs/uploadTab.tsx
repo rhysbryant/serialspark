@@ -228,14 +228,14 @@ export default class UploadTab extends AbstractTab<UploadState> {
         this.setState({
             fileLoadInProgress: false,
             uploadInProgress: true,
-            uploadProgressMax: 1000,
+            uploadProgressMax: 100,
             uploadProgressValue: 1
         });
 
-        const progressDiv = Math.abs(1000 / buffer.byteLength);
+        
 
         const progressCallback = (value) => {
-            const progress = value * progressDiv;
+            const progress = value;
             this.setState({ uploadProgressValue: progress });
 
             if (this.state.cancelRequested) {
