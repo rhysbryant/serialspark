@@ -464,7 +464,7 @@ export default class Stm32BootLoaderClient {
                         default:
                             throw "record type not supported";
                     }
-                    progressCallback(intelHEXDecoder.lengthRead);
+                    progressCallback(progressDiv*i);
                 }
                 resolve(startAddress);
             } catch (e) {
