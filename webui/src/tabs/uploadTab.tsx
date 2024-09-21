@@ -113,6 +113,7 @@ class Stm32FirmwareUpload implements FileUploadHandler {
         const b = new Stm32BootLoaderClient(this.#uploadTab.props.serialClient);
         //ElementUtils.enableControl(event.target as Element, false);
         this.#operationInProgress = true;
+        uploadTab.currentOperation = "attempting to query device"
         uploadTab.forceUpdate();//TODO fix this
         b.sendSyncByte().then(() => {
             b.getProductID().then(id => {
