@@ -14,8 +14,8 @@
  You should have received a copy of the GNU General Public License
  along with serialspark. If not, see <https://www.gnu.org/licenses/>.
  */
-import { CheckBox, DropDown, TextInput } from "../commonControls";
-import { Network, NetworkType, WiFiSettings } from "../lib/settingsAPI";
+import { CheckBox, DropDown, FileInput, TextInput } from "../commonControls";
+import { CertInfo, CertSettings, Network, NetworkType, WiFiSettings } from "../lib/settingsAPI";
 import { AbstractTab } from "./abstractTab";
 
 interface SettingsTabState {
@@ -24,10 +24,15 @@ interface SettingsTabState {
     busy: boolean
     WIFIClient: Network
     WIFIvirtualAccessPoint: Network
+    TLScertFile?: ArrayBuffer
+    TLSPKFile?: ArrayBuffer
+    certUploadInProgress: boolean
+    certInfo?: CertInfo
 }
 
 export default class SettingsTab extends AbstractTab<SettingsTabState> {
-    #wifiSettings = new WiFiSettings("")
+    #wifiSettings = new WiFiSettings("");
+    #certSettings = new CertSettings("");
     constructor(props) {
         super(props);
         this.state = {
@@ -36,6 +41,7 @@ export default class SettingsTab extends AbstractTab<SettingsTabState> {
             busy: false,
             WIFIClient: { psk: "", name: "", securityType: "" },
             WIFIvirtualAccessPoint: { psk: "", name: "", securityType: "" },
+            certUploadInProgress: false
         }
     }
 
@@ -49,6 +55,12 @@ export default class SettingsTab extends AbstractTab<SettingsTabState> {
         }).catch(e => {
             this.props.postStatusUpdate('operation', e.toString());
         })
+
+        this.#certSettings.getTLSSetupInfo().then(info => {
+            this.setState({ certInfo: info });
+        }).catch(e => {
+            this.currentOperation = e;
+        });
     }
 
     #doScan() {
@@ -104,6 +116,78 @@ export default class SettingsTab extends AbstractTab<SettingsTabState> {
         }
     }
 
+    #uploadCertClick() {
+
+        const { TLSPKFile, TLScertFile } = this.state
+
+        const doUpload = (cb: () => Promise<void>) => {
+            this.setState({ certUploadInProgress: true });
+            this.currentOperation = "Uploading";
+
+            cb().then(() => {
+                this.setState({ certUploadInProgress: false });
+                this.currentOperation = "Cert Upload Complete";
+            }).catch(err => this.currentOperation = "Uploading Cert Failed: " + err)
+                .finally(() => this.setState({ certUploadInProgress: false }));
+        }
+
+        let result = null;
+
+        if (TLSPKFile) {
+            result = doUpload(() => this.#certSettings.uploadPK(TLSPKFile));
+        }
+
+        if (TLScertFile != null) {
+            const f = () => doUpload(() => this.#certSettings.uploadCert(TLScertFile));
+            if (result != null) {
+                result.then(f);
+            } else {
+                f();
+            }
+
+        }
+    }
+
+    #certFileSelected(name: string, e: HTMLInputElement) {
+        const set = (val) => {
+            if (name == "pk") {
+                this.setState({ TLSPKFile: val });
+            } else {
+                this.setState({ TLScertFile: val });
+            }
+        }
+
+        if(e.files.length == 0){
+            set(null);
+        }else{
+            e.files[0].arrayBuffer().then(buf => set(buf));
+        }
+    }
+
+    #certStatusSummary() {
+        const keys = [
+            "commonName",
+            "expiry",
+            "hasPK"
+        ]
+        const { certInfo } = this.state;
+        if (certInfo == null) {
+            return <span>TLS not configured</span>
+        }
+
+        return keys.map(key => {
+            if (certInfo[key]) {
+                return (<div>
+                    <span>{key}:</span>
+                    <span>{certInfo[key]}</span>
+                </div>
+                )
+            } else {
+                return null;
+            }
+        })
+    }
+
     render() {
         const { state } = this;
 
@@ -131,6 +215,17 @@ export default class SettingsTab extends AbstractTab<SettingsTabState> {
                     <CheckBox label="Always Enabled" onChange={() => { }} />
                     <div>
                         <button onClick={this.#onSaveClick.bind(this)}>Save</button>
+                    </div>
+                </div>
+            </details>
+            <details class="form-group" >
+                <summary>SSL Certificate</summary>
+                {this.#certStatusSummary()}
+                <div class=" form-v" >
+                    <FileInput enabled={!state.certUploadInProgress} label="Private Key" onChange={(elm) => this.#certFileSelected("pk", elm)} />
+                    <FileInput enabled={!state.certUploadInProgress} label="Certificate Chain" onChange={(elm) => this.#certFileSelected("cert", elm)} />
+                    <div>
+                        <button {...(((state.TLSPKFile == null && state.TLScertFile == null) || state.certUploadInProgress) && { disabled: true })} onClick={this.#uploadCertClick.bind(this)}>Save</button>
                     </div>
                 </div>
             </details>

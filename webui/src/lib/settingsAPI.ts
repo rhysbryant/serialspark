@@ -27,6 +27,12 @@ export enum NetworkType {
     Client, AP
 }
 
+export interface CertInfo {
+    expiry?: string
+    commonName?: string
+    hasPK: boolean
+}
+
 export class WiFiSettings {
     #baseURL: string
 
@@ -82,9 +88,9 @@ export class WiFiSettings {
                         }
 
                         const { success, message } = val[key];
-                        if(!success){
-                            reject(message||"wifi config update failed");
-                        }else{
+                        if (!success) {
+                            reject(message || "wifi config update failed");
+                        } else {
                             resolve();
                         }
                     }).catch(reason => reject(reason))
@@ -92,4 +98,58 @@ export class WiFiSettings {
             }).catch(reason => reject(reason));
         })
     }
+}
+
+export class CertSettings {
+    #baseURL: string
+
+    constructor(url: string) {
+        this.#baseURL = url;
+    }
+
+    async #putFile(path: string, file: ArrayBuffer) {
+        return new Promise<void>((resolve, reject) => {
+            fetch(this.#baseURL + path, { method: "PUT", body: file }).then(result => {
+                if (!result.ok) {
+                    result.text().then(err => reject(err))
+                }else{
+                    resolve();
+                }           
+            }).catch(reason => reject(reason));
+        })
+    }
+    /**
+     * upload the TLS cert chain
+     * @param certFile TLS cert chain in PEM format
+     * @returns 
+     */
+    async uploadCert(certFile: ArrayBuffer) {
+        return this.#putFile("/tls/cert", certFile)
+    }
+    /**
+     * upload the TLS private key
+     * @param PKFile TLS private key in PEM format
+     * @returns 
+     */
+    async uploadPK(PKFile: ArrayBuffer) {
+        return this.#putFile("/tls/pk", PKFile)
+    }
+    /**
+     * get information about the current TLS cert
+     * @returns infra about the cert currently in use
+     */
+    async getTLSSetupInfo() {
+        return new Promise<CertInfo>((resolve, reject) => {
+            fetch(this.#baseURL + "/tls", {}).then(result => {
+                if (result.ok) {
+                    result.json().then(json => {
+                        resolve(json);
+                    }).catch(e => reject(e.toString()))
+                } else {
+                    result.text().then(err => reject(err))
+                }
+            }).catch(reason => reject(reason));
+        });
+    }
+
 }

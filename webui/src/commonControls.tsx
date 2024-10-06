@@ -16,15 +16,18 @@
  */
 import { ComponentChildren } from "preact";
 
-interface DropDownProps {
+interface InputBaseProps {
     label: string
+    enabled?: boolean
+    //other controls to put on the same row
+    children?: ComponentChildren
+}
+
+interface DropDownProps extends InputBaseProps {
     items: string[]
     selectedIndex?: number
     //select item by it's text
     selectedItem?: string
-    enabled?: boolean
-    //other controls to put on the same row
-    children?: ComponentChildren
     onChange: (value: string) => void
 }
 
@@ -32,18 +35,14 @@ export function DropDown({ label, enabled, items, onChange, children }: DropDown
     return (<div>
         <label>{label}</label>
         <select onChange={(event) => onChange((event.target as any).value)}  {...((!(this.props.enabled == undefined || enabled)) && { disabled: true })} >
-            {items?.map((item, index) => <option {...((index == this.state.selectedIndex || item == this.props.selectedItem ) && { selected: true })} >{item}</option>)}
+            {items?.map((item, index) => <option {...((index == this.state.selectedIndex || item == this.props.selectedItem) && { selected: true })} >{item}</option>)}
         </select>
         {children}
     </div>)
 }
 
-interface CheckBoxProps {
-    label: string
+interface CheckBoxProps extends InputBaseProps {
     value?: string
-    enabled?: boolean
-    //other controls to put on the same row
-    children?: ComponentChildren
     onChange: (elm: HTMLInputElement) => void
     checked?: boolean
 }
@@ -57,27 +56,25 @@ export function CheckBox({ label, value, checked = false, enabled = true, childr
     </div>)
 }
 
-interface TextInputProps {
-    label: string
+interface TextInputProps extends InputBaseProps {
     value?: string
-    enabled?: boolean
     //other controls to put on the same row
-    children?: ComponentChildren
     onChange: (elm: HTMLInputElement) => void
     type?: string
     valueList?: string[]
-    size: number
+    size?: number
     inputRef?: (elm: HTMLInputElement) => void
 
 }
 
-export function TextInput({ label, type = "text", valueList = [], size = 30, inputRef, value, children, onChange }: TextInputProps) {
+export function TextInput({ label, type = "text", valueList = [], size = 30, inputRef, value, enabled = true, children, onChange }: TextInputProps) {
 
     const ID = label.replace(" ", "_") + (Math.random() * 100)
     const hasList = valueList.length > 0;;
     return (<div>
         <label for={"i" + ID} >{label}</label>
         <input type={type} value={value}
+            {...(!enabled && { disabled: true })}
             onChange={(event) => onChange(event.target as HTMLInputElement)}
             {...(hasList && { list: "dl" + ID })}
             size={size}
@@ -89,4 +86,12 @@ export function TextInput({ label, type = "text", valueList = [], size = 30, inp
         }
         {children}
     </div>)
+}
+
+interface FileInputProps extends InputBaseProps {
+    onChange: (elm: HTMLInputElement) => void
+}
+
+export function FileInput({ enabled, label, children, onChange }: FileInputProps) {
+    return <TextInput type="file" {...{ enabled, label, children, onChange }} />
 }
