@@ -64,7 +64,7 @@ export class App extends Component<{}, AppState> {
 	constructor(props) {
 		super(props);
 		this.state = {
-			serialClient: new SerialClient("ws://" + location.host + "/ws"),
+			serialClient: new SerialClient((location.protocol == "https:" ? "wss://" : "ws://") + location.host + "/ws"),
 			activeTabIndex: 0,
 			lastActiveTabIndex: 0,
 			serverStatus: "Connecting",
