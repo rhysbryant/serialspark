@@ -31,7 +31,7 @@ So the tool could by easily extended later by allowing internally stored externa
 
 ### Setup ###
 
-Tested on a esp-wroom-32 dev board
+Has been tested on a esp-wroom-32 and esp32-c3 super mini dev boards
 
 ### desired features / TODO ###
 
@@ -51,7 +51,7 @@ Tested on a esp-wroom-32 dev board
 ### First Run ###
 
 By default the network broadcast by the ESP is open. Connect to this network. 
-go to the IP address of the ESP and on the settings tab update the security for the virtual access point. To join to a network on this tab update the 'Client' details
+go to the IP address (generally 192.168.4.1) of the ESP and on the settings tab update the security for the virtual access point. To join to a network on this tab update the 'Client' details
 
 ### Web UI ###
  

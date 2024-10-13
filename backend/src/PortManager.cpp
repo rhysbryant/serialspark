@@ -19,7 +19,15 @@
 #include "memory.h"
 #include "driver/uart.h"
 
-const Port PortManager::ports[] = {Port(UART_NUM_0, "UART 0", 0, 0), Port(UART_NUM_1, "UART 1", 9, 10), Port(UART_NUM_2, "UART 2", 16,17)};
+const Port PortManager::ports[] = {
+    Port(UART_NUM_0, "UART 0", 0, 0)
+#ifdef UART_NUM_1
+    , Port(UART_NUM_1, "UART 1", 9, 10)
+#endif
+#ifdef UART_NUM_2
+    , Port(UART_NUM_2, "UART 2", 16, 17)
+#endif
+};
 const int PortManager::portCount = (sizeof(PortManager::ports) / sizeof(Port));
 bool PortManager::portLock[(sizeof(PortManager::ports) / sizeof(Port))] = {};
 
