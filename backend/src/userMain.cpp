@@ -34,13 +34,18 @@ extern "C"
 
 #include "PortManager.h"
 #include "Server.h"
+#include "SecureServer.h"
+#include "tls.h"
 #include "Router.h"
 #include "SimpleHTTPWebSocketClient.h"
 #include <esp_task_wdt.h>
 #include "WebsocketManager.h"
 #include "WifiManager.h"
+#include "CertManager.h"
 #include "EmbeddedFiles.h"
 // using SimpleHTTP::Server;
+using SimpleHTTP::SecureServer;
+using SimpleHTTP::SimpleString;
 using SimpleHTTP::Websocket;
 using SimpleHTTP::WebsocketManager;
 #include "webui_files.h"
@@ -48,19 +53,6 @@ using SimpleHTTP::WebsocketManager;
 #include <map>
 
 
-static void start_stop_handler(void *arg, esp_event_base_t event_base,
-                               int32_t event_id, void *event_data)
-{
-    if (event_id == IP_EVENT_STA_GOT_IP)
-    {
-       // Server::start();
-        esp_wifi_set_ps(WIFI_PS_NONE);
-    }
-    else
-    {
-      //  Server::stop();
-    }
-}
 
 uint32_t os_getUnixTime()
 {
@@ -117,7 +109,8 @@ void app_main(void)
 {
 
     PortManager::init();
-    esp_log_level_set("*", ESP_LOG_DEBUG);
+    esp_log_level_set("*", ESP_LOG_ERROR);
+    // esp_log_level_set("read", ESP_LOG_DEBUG);
     ESP_ERROR_CHECK(nvs_flash_init());
 
     ESP_ERROR_CHECK(esp_netif_init());
@@ -131,42 +124,53 @@ void app_main(void)
 
     SimpleHTTP::Server::listen(80);
 
+    CertManager::loadTLSCertAndPK();
+
+    auto initResult = SecureServer::TLSInit();
+    if (initResult != 0)
+    {
+        ESP_LOGE(__FUNCTION__, "TLSInit: failed with %s", mbedtls_high_level_strerr(initResult));
+    }
+
+    SecureServer::listen(443);
+
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, event_handler, 0));
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &start_stop_handler, 0));
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &start_stop_handler, 0));
 
     xTaskCreate(http_server_thread, "Server::loop()", configMINIMAL_STACK_SIZE * 20, nullptr, 2, nullptr);
 
     SimpleHTTP::EmbeddedFilesHandler::addFiles((SimpleHTTP::EmbeddedFile *)files,
-     sizeof(files) / sizeof(FileContent),(SimpleHTTP::EmbeddedFileType*)filesType);
-    
+                                               sizeof(files) / sizeof(FileContent), (SimpleHTTP::EmbeddedFileType *)filesType);
+
     SimpleHTTP::Router::setDefaultHandler(SimpleHTTP::EmbeddedFilesHandler::embeddedFilesHandler);
     SimpleHTTP::Router::addHandler("/wifi", WIfiManager::wifiConfigRequest);
     SimpleHTTP::Router::addHandler("/wifi/scan", WIfiManager::wifiScanRequest);
+    SimpleHTTP::Router::addHandler("/tls/cert", CertManager::certPutRequest);
+    SimpleHTTP::Router::addHandler("/tls/pk", CertManager::certPutRequest);
+    SimpleHTTP::Router::addHandler("/tls", CertManager::certGETConfigRequest);
 
     SimpleHTTP::Router::addHandler("/ws", [](SimpleHTTP::Request *req, SimpleHTTP::Response *resp)
-    {
+                                   {
        auto c = new SimpleHTTPWebSocketClient(resp->hijackConnection());
        resp->setSessionArg(c);
        resp->setSessionArgFreeHandler([](void* arg){
             delete static_cast<SimpleHTTPWebSocketClient*>(arg);
-       });
-
-        WebsocketManager::upgradeHandler(req,resp); 
     });
+
+    WebsocketManager::upgradeHandler(req,resp); });
 
     WebsocketManager::setFrameReceivedHandler([](Websocket *sock, SimpleHTTP::Websocket::Frame *frame)
-    {
+                                              {
+        
         if( frame->frameType == Websocket::FrameTypeBin ){
             static_cast<SimpleHTTPWebSocketClient*>(sock->getConnection()->sessionArg)->handleMessage((char*)frame->payload,frame->payloadLength);
+        }else{
+            ESP_LOGI(__FUNCTION__,"got frame type %d length %d",(int)frame->frameType,frame->payloadLength);
         } 
     });
-    
-    
-    return;
 
+    return;
 }
