@@ -24,6 +24,7 @@ extern "C"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
+#include "driver/uart.h"
 }
 //ESP UART Port Wrapper
 class Port
@@ -44,10 +45,10 @@ private:
 public:
 
 
-    const int portNum;
+    const uart_port_t portNum;
     const char *portName;
     static const int reservedBufferHeadSpace = 1;
-    Port(const int portNum, const char *name, int RXPin, int TXPin);
+    Port(const uart_port_t portNum, const char *name, int RXPin, int TXPin);
     
     int read(char *buf, uint32_t bufLen, int timeout);
     
