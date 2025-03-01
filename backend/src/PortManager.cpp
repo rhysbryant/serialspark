@@ -21,10 +21,10 @@
 
 const Port PortManager::ports[] = {
     Port(UART_NUM_0, "UART 0", 0, 0)
-#ifdef UART_NUM_1
+#if (SOC_UART_HP_NUM >= 1)
     , Port(UART_NUM_1, "UART 1", 9, 10)
 #endif
-#ifdef UART_NUM_2
+#if (SOC_UART_HP_NUM > 2)
     , Port(UART_NUM_2, "UART 2", 16, 17)
 #endif
 };

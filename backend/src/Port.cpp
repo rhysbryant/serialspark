@@ -16,9 +16,8 @@
  */
 
 #include "Port.h"
-#include "driver/uart.h"
 #include "esp_log.h"
-Port::Port(int _portNum, const char *_name, int RXPin, int TXPin) : portNum(_portNum), portName(_name)
+Port::Port(uart_port_t _portNum, const char *_name, int RXPin, int TXPin) : portNum(_portNum), portName(_name)
 {
     ready = false;
     readLock = xSemaphoreCreateMutex();
