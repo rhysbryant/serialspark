@@ -31,9 +31,10 @@ bool Port::init()
 {
     if (!ready)
     {
-        auto result = uart_driver_install(portNum, 1024 * 2, 0, 20, 0, 0) == ESP_OK;
+        auto result = uart_is_driver_installed(portNum) || uart_driver_install(portNum, 1024 * 2, 0, 20, 0, 0) == ESP_OK;
+        ESP_LOGI("SETUP","result %d",(int)result);
 
-        if (result && xTaskCreate(Port::readLoop, "Port::loop()", configMINIMAL_STACK_SIZE * 20, this, 2, &readTask) == pdPASS)
+        if (result && xTaskCreate(Port::readLoop, "Port::loop()", configMINIMAL_STACK_SIZE * 5, this, 2, &readTask) == pdPASS)
         {
             ready = true;
             return true;
