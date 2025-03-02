@@ -32,7 +32,7 @@ export function DropDown({ label, enabled, items, onChange, children }: DropDown
     return (<div>
         <label>{label}</label>
         <select onChange={(event) => onChange((event.target as any).value)}  {...((!(this.props.enabled == undefined || enabled)) && { disabled: true })} >
-            {items?.map((item, index) => <option {...((index == this.state.selectedIndex || item == this.props.selectedItem ) && { selected: true })} >{item}</option>)}
+            {items?.map((item, index) => <option {...((index == this.state?.selectedIndex || item == this.props.selectedItem) && { selected: true })} >{item}</option>)}
         </select>
         {children}
     </div>)

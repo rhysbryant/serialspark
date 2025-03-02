@@ -17,6 +17,7 @@
 
 #include "WifiManager.h"
 #include "esp_log.h"
+#include "esp_netif.h"
 
 using SimpleHTTP::Request;
 using SimpleHTTP::Response;
@@ -111,6 +112,20 @@ void WIfiManager::wifiConfigRequest(Request *req, Response *resp)
     }
 }
 
+char* WIfiManager::getIPAddress(const char* IFname) {
+    auto interfaceHandle = esp_netif_get_handle_from_ifkey(IFname);
+    if(!interfaceHandle){
+        return nullptr;
+    }
+
+    esp_netif_ip_info_t ipInfo;
+    if(esp_netif_get_ip_info(interfaceHandle, &ipInfo) != ESP_OK){
+        return nullptr;
+    }
+
+    return ip4addr_ntoa((const ip4_addr_t*)&ipInfo.ip);
+}
+
 void WIfiManager::wifiConfigRequestGET(Request *req, Response *resp)
 {
     auto root = cJSON_CreateObject();
@@ -118,9 +133,9 @@ void WIfiManager::wifiConfigRequestGET(Request *req, Response *resp)
     wifi_config_t staCfg;
     if (esp_wifi_get_config(WIFI_IF_STA, &staCfg) == ESP_OK)
     {
-
+        //esp_wifi_sta_get_rssi();//int32_t rssi = 0;
         auto sta = cJSON_CreateObject();
-        auto n = WifiNetwork{ssid : (const char *)staCfg.sta.ssid, authType : -1};
+        auto n = WifiNetwork{ssid: (const char *)staCfg.sta.ssid, authType: -1,psk: 0, IPAddr: getIPAddress("WIFI_STA_DEF")};
 
         writeWifiNetworkToJSON(sta, &n);
         cJSON_AddItemToObjectCS(root, "sta", sta);
@@ -130,7 +145,10 @@ void WIfiManager::wifiConfigRequestGET(Request *req, Response *resp)
     if (esp_wifi_get_config(WIFI_IF_AP, &apCfg) == ESP_OK)
     {
         auto ap = cJSON_CreateObject();
-        auto n = WifiNetwork{ssid : (const char *)apCfg.ap.ssid, authType : apCfg.ap.authmode};
+        auto n = WifiNetwork{ssid: (const char *)apCfg.ap.ssid, authType: apCfg.ap.authmode, psk: 0, IPAddr: getIPAddress("WIFI_AP_DEF")};
+
+        
+
         writeWifiNetworkToJSON(ap, &n);
 
         auto supportedAuthModes = cJSON_AddArrayToObject(ap, "supportedSecurityTypes");
@@ -164,6 +182,11 @@ void WIfiManager::writeWifiNetworkToJSON(cJSON *json, WifiNetwork *network)
     if (t != nullptr)
     {
         cJSON_AddStringToObject(json, "securityType", t->name);
+    }
+
+    if (network->IPAddr != nullptr)
+    {
+        cJSON_AddStringToObject(json, "IPAddress", network->IPAddr);
     }
 }
 
@@ -363,34 +386,20 @@ void WIfiManager::wifiScanRequest(Request *req, Response *resp)
 
     ESP_LOGI(__FUNCTION__, "found %d networks", (int)foundCount);
 
-    wifi_ap_record_t records[10];
-
-    uint16_t returned = 10;
-    while (foundCount > 0)
+    wifi_ap_record_t record;
+    for (int i = 0; i < foundCount; i++)
     {
-        returned = 10;
-        if (esp_wifi_scan_get_ap_records(&returned, records) == ESP_OK)
-        {
-            ESP_LOGI(__FUNCTION__, "got %d networks", (int)returned);
-            foundCount -= returned;
-            for (int i = 0; i < returned; i++)
-            {
-                auto wifiEntry = cJSON_CreateObject();
+        if(esp_wifi_scan_get_ap_record(&record) == ESP_OK){
+            auto wifiEntry = cJSON_CreateObject();
 
-                auto n = WifiNetwork{ssid : (const char *)(const char *)records[i].ssid,
-                                     authType : records[i].authmode};
-                writeWifiNetworkToJSON(wifiEntry, &n);
+            auto n = WifiNetwork{ssid : (const char *)(const char *)record.ssid,
+                                authType : record.authmode};
+            writeWifiNetworkToJSON(wifiEntry, &n);
 
-                cJSON_AddNumberToObject(wifiEntry, "signalInfo", records[i].rssi);
+            cJSON_AddNumberToObject(wifiEntry, "signalInfo", record.rssi);
 
-                jsonOutput.outputJSON(wifiEntry);
-                cJSON_Delete(wifiEntry);
-            }
-            break;
-        }
-        else
-        {
-            break;
+            jsonOutput.outputJSON(wifiEntry);
+            cJSON_Delete(wifiEntry);
         }
     }
     jsonOutput.end();

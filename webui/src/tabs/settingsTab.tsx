@@ -104,13 +104,23 @@ export default class SettingsTab extends AbstractTab<SettingsTabState> {
         }
     }
 
+    #getStatusSummay(network: Network) {
+        let IPAddress = network.IPAddress;
+        if( IPAddress != null){
+            return <span className="extraInfo" >(ESP Address: {IPAddress})</span>
+        }
+        return <span></span>
+    }
+
     render() {
         const { state } = this;
+        let clientStatusInfo = this.#getStatusSummay(this.state.WIFIClient);
+        let APStatusInfo = this.#getStatusSummay(this.state.WIFIvirtualAccessPoint);
 
         return <div>
             <h3>Wifi Settings</h3>
             <details class="form-group" >
-                <summary>Client</summary>
+                <summary>Client {clientStatusInfo}</summary>
                 <div class="form-v" >
                     <TextInput size={10} label="SSID" value={this.state.WIFIClient?.name} valueList={state.wifiList.map(list => list.name)} onChange={(elm) => this.#patchWIFIField(false, "name", elm.value)} >
                         <button onClick={this.#onScanClick.bind(this)} {...((state.scanInProgress || state.busy) && { disabled: true })} >{state.scanInProgress ? "Scanning" : "Scan"}</button>
@@ -123,7 +133,7 @@ export default class SettingsTab extends AbstractTab<SettingsTabState> {
                 </div>
             </details>
             <details class="form-group" >
-                <summary>Virtual Access Point</summary>
+                <summary>Virtual Access Point {APStatusInfo}</summary>
                 <div class=" form-v" >
                     <TextInput size={16} label="SSID" value={this.state.WIFIvirtualAccessPoint?.name} onChange={(elm: HTMLInputElement) => this.#patchWIFIField(true, "name", elm.value)} />
                     <DropDown label="Security" selectedItem={this.state.WIFIvirtualAccessPoint?.securityType} items={this.state.WIFIvirtualAccessPoint.supportedSecurityTypes ?? []} onChange={(val) => this.#patchWIFIField(true, "securityType", val)} />
