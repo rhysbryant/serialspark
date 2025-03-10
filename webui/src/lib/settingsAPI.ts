@@ -20,6 +20,7 @@ export interface Network {
     name: string
     psk?: string
     signalInfo?: string
+    IPAddress?: string
     supportedSecurityTypes?: string[]
 }
 

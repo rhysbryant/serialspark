@@ -40,8 +40,10 @@ private:
         const char* ssid;
         int authType;
         const char* psk;
+        const char* IPAddr;
     };
 
+    static char* getIPAddress(const char* IFname);
     static bool readWifiNetworkFromJSON(cJSON *json,WifiNetwork* network);
     static void writeWifiNetworkToJSON(cJSON *json,WifiNetwork* network);
     struct WIFISecurityType {

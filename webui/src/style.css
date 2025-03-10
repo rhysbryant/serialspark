@@ -56,7 +56,8 @@ div#status>span {
 }
 
 div.tab {
-	display: inline-block;
+	display: block;
+	text-align: center;
 
 	border-top-left-radius: 24px;
 	border-top-right-radius: 24px;
@@ -64,6 +65,11 @@ div.tab {
 	border-bottom-right-radius: 0px;
 	font-weight: bold;
 	margin-top: 2px;
+}
+@media (min-width:490px) {
+	div.tab {
+		display: inline-block;	
+	}
 }
 
 div.tab>div {
@@ -128,4 +134,8 @@ div#displayDataTable {
 
 details.form-group {
 	display: inline-block;
+}
+
+.extraInfo {
+	font-size: x-small;
 }
