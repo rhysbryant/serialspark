@@ -54,6 +54,7 @@ bool UserAuthManager::userPasswordStringIsValid(const char *value)
     {
         if (!(value[i] >= 32 && value[i] <= 126))
         {
+            ESP_LOGI(__FUNCTION__, "check failed");
             return false;
         }
     }
@@ -143,7 +144,6 @@ bool UserAuthManager::checkUserCreds(const User *user)
     uint8_t hmac[32] = {};
     if (getAuthHash(user, hmac) && memcmp(hmac, buffer, length) == 0)
     {
-        ESP_LOGI(__FUNCTION__, "length %d", (int)length);
         return true;
     }
 
@@ -297,6 +297,13 @@ void UserAuthManager::updateLoginPOSTRequest(Request *req, Response *resp)
     {
         resp->writeHeader(Response::Unauthorized);
         resp->write("incorrect existing creds");
+        return;
+    }
+
+    if (!storeUserCreds(&newUser))
+    {
+        resp->writeHeader(Response::InternalServerError);
+        resp->write("failed to update or create user");
         return;
     }
 

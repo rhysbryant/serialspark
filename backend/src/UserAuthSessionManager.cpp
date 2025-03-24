@@ -34,7 +34,6 @@ void UserAuthSessionManager::initSessionGenerator()
         ESP_LOGE(__FUNCTION__, "Failed to initialize CTR_DRBG: -0x%04x\n", -ret);
         return;
     }
-    
 }
 
 char *UserAuthSessionManager::createSession()
@@ -54,6 +53,7 @@ char *UserAuthSessionManager::createSession()
 
     // Convert the SHA256 hash to a hexadecimal string
     auto session_token = (char *)malloc(65);
+    if (!session_token)
     {
         return nullptr;
     }
@@ -62,7 +62,6 @@ char *UserAuthSessionManager::createSession()
     {
         sprintf(&session_token[i * 2], "%02x", sha256_hash[i]);
     }
-
 
     sessions[session_token] = esp_log_timestamp();
 
@@ -95,7 +94,7 @@ void UserAuthSessionManager::removeExpiredSessions()
         if (currentTime - it->second > sessionMaxIdleTime)
         {
             // Session has expired, remove it
-            free(it->first); 
+            free(it->first);
             it = sessions.erase(it);
         }
         else
@@ -105,7 +104,8 @@ void UserAuthSessionManager::removeExpiredSessions()
     }
 }
 
-bool UserAuthSessionManager::checkTokenValid(const char* token) {
+bool UserAuthSessionManager::checkTokenValid(const char *token)
+{
     return updateSessionLastUse(token);
 }
 
@@ -128,7 +128,6 @@ bool UserAuthSessionManager::checkTokenValid(Request *req, Response *resp)
     }
     return true;
 }
-
 
 std::map<char *, uint32_t, UserAuthSessionManager::cmp_str> UserAuthSessionManager::sessions;
 
