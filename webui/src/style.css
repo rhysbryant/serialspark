@@ -94,6 +94,11 @@ div.tab:hover,
 	margin: 5px;
 }
 
+div.form-v div.form-message{
+	display: block;
+	padding: 5px;
+}
+
 .form-v div {
 	display: table-row;
 }
@@ -138,4 +143,10 @@ details.form-group {
 
 .extraInfo {
 	font-size: x-small;
+}
+
+div.from-center{
+	max-width: fit-content;
+	margin-left: auto;
+	margin-right: auto;	
 }

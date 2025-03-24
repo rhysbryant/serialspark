@@ -15,7 +15,8 @@
  along with serialspark. If not, see <https://www.gnu.org/licenses/>.
  */
 #include "CertManager.h"
-#include "cJSON.h"
+#include "UserAuthSessionManager.h"
+#include "Json.h"
 extern "C"
 {
 
@@ -31,7 +32,10 @@ using SimpleHTTP::SecureServer;
 
 void CertManager::certPutRequest(Request *req, Response *resp)
 {
-
+    if (!UserAuthSessionManager::checkTokenValid(req, resp))
+    {
+        return;
+    }
     if (req->method != Request::PUT)
     {
         resp->writeHeader(Response::NotFound);
@@ -171,7 +175,9 @@ void CertManager::writeMbedTLSErrorResponse(int err, Response *resp)
         resp->write("error");
     }
 }
-
+/*
+ * no auth required because this only returns info that could be gathered from the cert anyway
+ */
 void CertManager::certGETConfigRequest(Request *req, Response *resp)
 {
     if (req->method != Request::GET)
@@ -188,23 +194,18 @@ void CertManager::certGETConfigRequest(Request *req, Response *resp)
         return;
     }
 
-    auto cfg = cJSON_CreateObject();
+    Json cfg;
     auto certInfo = SecureServer::getCertChain();
 
     char name[512] = "";
     if (certInfo)
     {
         auto result = mbedtls_x509_dn_gets(name, sizeof(name), &certInfo->subject);
-        auto cn = cJSON_CreateStringReference(name);
-        cJSON_AddItemToObject(cfg, "commonName", cn);
-        cJSON_AddNumberToObject(cfg, "certResult", result);
+        cfg.addField("certResult", result);
+        cfg.addField("commonName", name);
     }
 
-    resp->writeHeaderLine("Content-Type", "text/json");
-    auto str = cJSON_PrintUnformatted(cfg);
-    resp->write(str);
-    delete str;
-    cJSON_Delete(cfg);
+    cfg.writeJsonToResponse(resp);
 }
 
 esp_err_t CertManager::loadTLSCertAndPK()

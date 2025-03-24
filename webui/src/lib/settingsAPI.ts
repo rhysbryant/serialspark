@@ -34,11 +34,100 @@ export interface CertInfo {
     hasPK: boolean
 }
 
-export class WiFiSettings {
-    #baseURL: string
+export interface UserCreds {
+    user: string
+    password: string
+}
 
-    constructor(url: string) {
-        this.#baseURL = url;
+export interface GetTokenResponse {
+    token?: string
+    sucsess: boolean
+}
+
+export class Auth {
+    URL: string
+    #token: string
+
+    constructor(token: string) {
+        this.#token = token
+        this.URL = ""
+    }
+
+    get authHeader() {
+        return {
+            'authentication': `token ${this.#token}`
+        };
+    }
+
+    static async getToken(user?: UserCreds) {
+        return new Promise<GetTokenResponse>((resolve, reject) => {
+            let fields = {}
+            if (user != null) {
+                fields = {
+                    body: JSON.stringify(user),
+                    method: "POST"
+                }
+            }
+            fetch("/auth", fields).then(response => {
+                if (response.ok) {
+                    response.json().then(obj => {
+                        resolve(obj as GetTokenResponse)
+                    }).catch(reason => reject(reason));
+                } else if (response.status == 401 || response.status == 403) {
+                    resolve({ sucsess: false });
+                } else {
+                    resolve({ sucsess: true });
+                    //reject("unexpected response");
+                }
+            }).catch(e => reject(e));
+        });
+    }
+}
+
+export class AuthSettings {
+    #auth: Auth
+
+    get #defaulOptions() {
+        return {
+            headers: this.#auth.authHeader
+        }
+    }
+
+    constructor(auth: Auth) {
+        this.#auth = auth;
+    }
+
+    async updateUser(newUser: UserCreds, currentUser?: UserCreds) {
+        return new Promise<void>((resolve, reject) => {
+
+            fetch(this.#auth.URL + "/auth/update", {
+                method: "PUT", headers: this.#auth.authHeader,
+                body: JSON.stringify({ 'current': currentUser, 'new': newUser })
+            }).then(result => {
+                if (result.ok) {
+                    resolve();
+                } else {
+                    result.text().then(text => {
+                        reject(text);
+                    }).catch(e => reject(e));
+                }
+            }).catch(reason => reject(reason));
+        })
+    }
+
+}
+
+export class WiFiSettings {
+    #auth: Auth
+
+    get #defaulOptions() {
+        return {
+            headers: this.#auth.authHeader
+        }
+    }
+
+    constructor(auth: Auth) {
+        this.#auth = auth;
     }
     /**
      * runs a wifi scan on the server
@@ -46,7 +135,7 @@ export class WiFiSettings {
      */
     async WifiScan() {
         return new Promise<Network[]>((resolve, reject) => {
-            fetch(this.#baseURL + "/wifi/scan").then(result => {
+            fetch(this.#auth.URL + "/wifi/scan", this.#defaulOptions).then(result => {
                 if (result.ok) {
                     result.json().then(obj => {
                         resolve(obj as Network[])
@@ -62,7 +151,7 @@ export class WiFiSettings {
      */
     async getSavedNetwork(networkType?: NetworkType) {
         return new Promise<Map<string, Network>>((resolve, reject) => {
-            fetch(this.#baseURL + "/wifi").then(result => {
+            fetch(this.#auth.URL + "/wifi", this.#defaulOptions).then(result => {
                 if (result.ok) {
                     result.json().then(obj => {
                         resolve(obj)
@@ -80,7 +169,7 @@ export class WiFiSettings {
         return new Promise<void>((resolve, reject) => {
             const key = networkType == NetworkType.AP ? "ap" : "sta";
 
-            fetch(this.#baseURL + "/wifi", { method: "PUT", body: JSON.stringify({ [key]: network }) }).then(result => {
+            fetch(this.#auth.URL + "/wifi", { method: "PUT", headers: this.#auth.authHeader, body: JSON.stringify({ [key]: network }) }).then(result => {
                 if (result.ok) {
                     result.json().then(val => {
                         if (!val[key]) {
@@ -102,20 +191,26 @@ export class WiFiSettings {
 }
 
 export class CertSettings {
-    #baseURL: string
+    #auth: Auth
 
-    constructor(url: string) {
-        this.#baseURL = url;
+    constructor(auth: Auth) {
+        this.#auth = auth
+    }
+
+    get #defaulOptions() {
+        return {
+            headers: this.#auth.authHeader
+        }
     }
 
     async #putFile(path: string, file: ArrayBuffer) {
         return new Promise<void>((resolve, reject) => {
-            fetch(this.#baseURL + path, { method: "PUT", body: file }).then(result => {
+            fetch(this.#auth.URL + path, { method: "PUT", headers: this.#auth.authHeader, body: file }).then(result => {
                 if (!result.ok) {
                     result.text().then(err => reject(err))
-                }else{
+                } else {
                     resolve();
-                }           
+                }
             }).catch(reason => reject(reason));
         })
     }
@@ -141,7 +236,7 @@ export class CertSettings {
      */
     async getTLSSetupInfo() {
         return new Promise<CertInfo>((resolve, reject) => {
-            fetch(this.#baseURL + "/tls", {}).then(result => {
+            fetch(this.#auth.URL + "/tls", this.#defaulOptions).then(result => {
                 if (result.ok) {
                     result.json().then(json => {
                         resolve(json);

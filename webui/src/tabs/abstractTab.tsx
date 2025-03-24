@@ -16,8 +16,10 @@
  */
 import { Attributes, Component, ComponentChild, ComponentChildren, Ref } from "preact";
 import { SerialClient } from "../lib/serialClient";
+import { Auth } from "../lib/settingsAPI";
 
 interface TabProps {
+    auth: Auth
     serialClient: SerialClient
     postStatusUpdate: (type: string, message: string) => void,
     //get a callback function for providing new data to the tab without rerendering

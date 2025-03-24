@@ -39,6 +39,7 @@ type AsyncResponse = (response: ArrayBuffer) => void
  * uses a websocket
  */
 export class SerialClient {
+    #CmdAuthenticate = 0
     #CmdOpen = 1
     #CmdClose = 2
     #CmdSetMode = 3
@@ -56,12 +57,14 @@ export class SerialClient {
     #responseQueue = new Array<ResponseCallback>();
     #readyEvents = []
     #asyncNewDataEvent = new Array<AsyncResponse>();
-    constructor(address: string) {
+    #authToken
+    constructor(address: string, authToken: string) {
         this.#websocket = new WebSocket(address);
         this.#websocket.onopen = this.#onOpen.bind(this);
         this.#websocket.onmessage = this.#onData.bind(this);
         this.#websocket.onerror = this.#onError.bind(this);
         this.#websocket.onclose = this.#onClose.bind(this);
+        this.#authToken = authToken;
     }
 
     onSocketError: (message: string) => void = null;
@@ -108,7 +111,27 @@ export class SerialClient {
     }
 
     #onOpen(event: Event) {
-        this.#readyEvents.forEach((item) => item())
+        this.#sendAuthenticationToken(this.#authToken).then(() => {
+            this.#readyEvents.forEach((item) => item())
+        }).catch(e => {
+            this.close();
+            if (this.onSocketError != null) {
+                this.onSocketError(e);
+            }
+        })
+
+
+    }
+
+    async #sendAuthenticationToken(token: string) {
+        const buffer = new ArrayBuffer(token.length + 1);
+        const dv = new DataView(buffer);
+        dv.setUint8(0, token.length)
+
+        const encoder = new TextEncoder();
+        encoder.encodeInto(token, new Uint8Array(buffer, 1, token.length))
+
+        return this.#sendCommandVoidResponse(this.#CmdAuthenticate, new Uint8Array(buffer));
     }
 
     async #send(data: ArrayBuffer | Uint8Array) {

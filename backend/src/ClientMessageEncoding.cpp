@@ -22,10 +22,21 @@ MessageDecoder::MessageDecoder(const char *_payload, int _size) : messageType((M
 {
 }
 
+bool MessageDecoder::readAuthenticateRequest(AuthenticateRequest *out)
+{
+    out->length = (uint8_t)payload[0];
+    if (out->length >= payloadSize)
+    {
+        return false;
+    }
+    out->token = payload + 1;
+    return true;
+}
+
 bool MessageDecoder::readOpenPortRequest(OpenPortRequest *out)
 {
     out->nameSize = (uint8_t)payload[0];
-    if (out->nameSize > payloadSize)
+    if (out->nameSize >= payloadSize)
     {
         return false;
     }

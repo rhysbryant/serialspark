@@ -33,9 +33,10 @@ protected:
         OperationNotPermitted
     };
     Port *port;
+    bool authenticated;
 
 public:
-    ClientConnection() : port(nullptr), lastModeRequest({}){};
+    ClientConnection() : port(nullptr),authenticated(false), lastModeRequest({}){};
     virtual ~ClientConnection();
     void handleMessage(char *payload, int size);
 

@@ -17,6 +17,7 @@
 
 #include "PortManager.h"
 #include "ClientConnection.h"
+#include "UserAuthSessionManager.h"
 #include "string.h"
 #include "memory.h"
 #include "esp_log.h"
@@ -67,7 +68,14 @@ void ClientConnection::handleMessage(char *payload, int size)
 
     ESP_LOGD(__FUNCTION__, "GOT MSG %d", messageDecoder.messageType);
 
-    if (port == nullptr && (messageDecoder.messageType != MessageDecoder::MessageTypeSetMode && messageDecoder.messageType != MessageDecoder::MessageTypeOpen && messageDecoder.messageType != MessageDecoder::MessageTypeGetPortList))
+    if (!authenticated && messageDecoder.messageType != MessageDecoder::MessageTypeAuthenticate)
+    {
+        errorMessage = "Authentication required";
+        writeErrorMessage(messageDecoder.messageType, errorMessage);
+        return;
+    }
+
+    if (port == nullptr && (messageDecoder.messageType != MessageDecoder::MessageTypeAuthenticate && messageDecoder.messageType != MessageDecoder::MessageTypeSetMode && messageDecoder.messageType != MessageDecoder::MessageTypeOpen && messageDecoder.messageType != MessageDecoder::MessageTypeGetPortList))
     {
         errorMessage = "Operation not allowed when port is closed";
         writeErrorMessage(messageDecoder.messageType, errorMessage);
@@ -77,8 +85,25 @@ void ClientConnection::handleMessage(char *payload, int size)
     switch (messageDecoder.messageType)
     {
     case MessageDecoder::MessageTypeAuthenticate:
-        //TODO
+    {
+        MessageDecoder::AuthenticateRequest r;
+        if (!messageDecoder.readAuthenticateRequest(&r))
+        {
+            errorMessage = failedToDecode;
+            break;
+        }
+
+        char token[256] = "";
+        mempcpy(token, r.token, r.length);
+        //TODO the token should not expire while the socket is in use
+        if (!UserAuthSessionManager::checkTokenValid(token))
+        {
+            errorMessage = "Authentication failed";
+            break;
+        }
+        authenticated = true;
         break;
+    }
     case MessageDecoder::MessageTypeOpen:
     {
         MessageDecoder::OpenPortRequest r = {};

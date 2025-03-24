@@ -35,8 +35,10 @@ extern "C"
 #include "PortManager.h"
 #include "Server.h"
 #include "SecureServer.h"
-#include "tls.h"
+//#include "tls.h"
 #include "Router.h"
+#include "UserAuthSessionManager.h"
+#include "UserAuthManager.h"
 #include "SimpleHTTPWebSocketClient.h"
 #include <esp_task_wdt.h>
 #include "WebsocketManager.h"
@@ -66,6 +68,7 @@ void http_server_thread(void *arg)
     {
         SimpleHTTP::Router::process();
         SimpleHTTP::WebsocketManager::process();
+        UserAuthSessionManager::removeExpiredSessions();
         vTaskDelay(1);
     }
 }
@@ -107,9 +110,12 @@ static void event_handler(void *arg, esp_event_base_t event_base,
 
 void app_main(void)
 {
+    ///nvs_erase_partition(NVS_DEFAULT_PARTITION);
+   // nvs_flash_erase_partition(NVS_DEFAULT_PART_NAME);
 
     PortManager::init();
-    esp_log_level_set("*", ESP_LOG_ERROR);
+    UserAuthSessionManager::initSessionGenerator();
+    esp_log_level_set("*", ESP_LOG_DEBUG);
     // esp_log_level_set("read", ESP_LOG_DEBUG);
     ESP_ERROR_CHECK(nvs_flash_init());
 
@@ -150,7 +156,9 @@ void app_main(void)
     SimpleHTTP::Router::addHandler("/wifi/scan", WIfiManager::wifiScanRequest);
     SimpleHTTP::Router::addHandler("/tls/cert", CertManager::certPutRequest);
     SimpleHTTP::Router::addHandler("/tls/pk", CertManager::certPutRequest);
-    SimpleHTTP::Router::addHandler("/tls", CertManager::certGETConfigRequest);
+    SimpleHTTP::Router::addHandler("/tls",CertManager::certGETConfigRequest);
+    SimpleHTTP::Router::addHandler("/auth",UserAuthManager::getTokenloginPOSTRequest);
+    SimpleHTTP::Router::addHandler("/auth/update",UserAuthManager::updateLoginPOSTRequest);
 
     SimpleHTTP::Router::addHandler("/ws", [](SimpleHTTP::Request *req, SimpleHTTP::Response *resp)
                                    {

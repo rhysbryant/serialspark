@@ -18,7 +18,8 @@
 #include "WifiManager.h"
 #include "esp_log.h"
 #include "esp_netif.h"
-
+#include "UserAuthSessionManager.h"
+#include "Json.h"
 using SimpleHTTP::Request;
 using SimpleHTTP::Response;
 
@@ -128,6 +129,10 @@ char* WIfiManager::getIPAddress(const char* IFname) {
 
 void WIfiManager::wifiConfigRequestGET(Request *req, Response *resp)
 {
+    if(!UserAuthSessionManager::checkTokenValid(req,resp)){
+        return;
+    }
+
     auto root = cJSON_CreateObject();
 
     wifi_config_t staCfg;
@@ -146,7 +151,6 @@ void WIfiManager::wifiConfigRequestGET(Request *req, Response *resp)
     {
         auto ap = cJSON_CreateObject();
         auto n = WifiNetwork{ssid: (const char *)apCfg.ap.ssid, authType: apCfg.ap.authmode, psk: 0, IPAddr: getIPAddress("WIFI_AP_DEF")};
-
         
 
         writeWifiNetworkToJSON(ap, &n);
@@ -197,6 +201,7 @@ bool WIfiManager::readWifiNetworkFromJSON(cJSON *json, WifiNetwork *network)
         return false;
     }
 
+
     auto nameObj = cJSON_GetObjectItemCaseSensitive(json, "name");
     if (nameObj == nullptr)
     {
@@ -232,6 +237,9 @@ bool WIfiManager::readWifiNetworkFromJSON(cJSON *json, WifiNetwork *network)
 
 void WIfiManager::wifiConfigRequestPUT(Request *req, Response *resp)
 {
+    if(!UserAuthSessionManager::checkTokenValid(req,resp)){
+        return;
+    }
 
     char buffer[512] = "";
     int size = sizeof(buffer);
@@ -370,6 +378,9 @@ void WIfiManager::wifiConfigRequestPUT(Request *req, Response *resp)
 
 void WIfiManager::wifiScanRequest(Request *req, Response *resp)
 {
+    if(!UserAuthSessionManager::checkTokenValid(req,resp)){
+        return;
+    }
     JsonOutput jsonOutput(resp, JsonOutput::ARRAY);
     esp_wifi_scan_start(NULL, true);
     uint16_t foundCount = 0;

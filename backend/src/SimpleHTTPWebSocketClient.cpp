@@ -20,8 +20,9 @@
 #include <string>
 #include "common.h"
 using SimpleHTTP::Result;
+using SimpleHTTP::Websocket;
 
-bool SimpleHTTPWebSocketClient::writeMessage(const char *payload, const int payloadSize,bool block)
+bool SimpleHTTPWebSocketClient::writeMessage(const char *msgPayload, const int payloadSize,bool block)
 {
     auto c = (SimpleHTTP::ServerConnection *)conn;
     if(block){
@@ -30,7 +31,15 @@ bool SimpleHTTPWebSocketClient::writeMessage(const char *payload, const int payl
             sys_delay_ms(1);
         }
     }
-    auto result = Websocket::writeFrame(c, Websocket::FrameTypeBin, (char *)payload, payloadSize, "", 0) == SimpleHTTP::OK;
+
+    Websocket::Payload payload ={
+        (const uint8_t *)msgPayload,
+        (uint16_t)payloadSize,
+        false,
+        nullptr
+    };
+
+    auto result = Websocket::writeFrame(c, Websocket::FrameTypeBin, &payload) == SimpleHTTP::OK;
     if (!result)
     {
         ESP_LOGE(__FUNCTION__, "writeMessage:send fail");
@@ -41,8 +50,14 @@ bool SimpleHTTPWebSocketClient::writeMessage(const char *payload, const int payl
 bool SimpleHTTPWebSocketClient::writeErrorMessage(MessageDecoder::MessageType msgType,  std::string& erroMessage)
 {
 
+    Websocket::Payload payload ={
+        (const uint8_t *)erroMessage.c_str(),
+        erroMessage.size(),
+        false,
+        nullptr
+    };    
 
-    auto result = Websocket::writeFrame((SimpleHTTP::ServerConnection *)conn, Websocket::FrameTypeText, (char *)erroMessage.c_str(), erroMessage.size(), "", 0) == SimpleHTTP::OK;
+    auto result = Websocket::writeFrame((SimpleHTTP::ServerConnection *)conn, Websocket::FrameTypeText, &payload) == SimpleHTTP::OK;
     if (!result)
     {
         ESP_LOGE(__FUNCTION__, "writeErrorMessage:send fail");

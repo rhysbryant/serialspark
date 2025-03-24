@@ -8,6 +8,7 @@ Works in mobile and desktop browsers.
 * terminal
 * send/view data in hex and or other formats
 * upload firmware to an STM32 over a UART connection
+* secure supports TLS and user authentication
 
 
 ## Why ##
@@ -35,7 +36,6 @@ Has been tested on a esp-wroom-32 and esp32-c3 super mini dev boards
 
 ### desired features / TODO ###
 
-* user authentication support
 * ESP firmware upload support
 * support for controlling DTR and RTS
 * UI Plugin support
@@ -54,6 +54,7 @@ By default the network broadcast by the ESP is open. Connect to this network.
 go to the IP address (generally 192.168.4.1) of the ESP and on the settings tab update the security for the virtual access point. To join to a network on this tab update the 'Client' details.
 
 To enable https upload a self signed or CA signed public/private using a secure wifi network.
+see settings tab
 
 ### Web UI ###
  

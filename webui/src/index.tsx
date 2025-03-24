@@ -25,6 +25,14 @@ import TermTab from './tabs/termTab';
 import DisplayTab from './tabs/displayTab';
 import StatusBar from './statusBar';
 import SettingsTab from './tabs/settingsTab';
+import LoginTab from './tabs/loginTab';
+import { Auth, GetTokenResponse } from './lib/settingsAPI';
+
+interface TabDef {
+	tab: any,
+	title: string,
+	aSyncData: boolean
+}
 
 interface AppState {
 	serialClient: SerialClient
@@ -33,19 +41,16 @@ interface AppState {
 	serverStatus: string
 	portStatus: string
 	operationStatus: string
-}
-
-interface TabDef {
-	tab: any,
-	title: string,
-	aSyncData: boolean
+	authToken?: string
+	tabs: TabDef[]
+	loginError?: string
 }
 
 export class App extends Component<{}, AppState> {
 	#client: SerialClient
 	#builtInTabs: any
-	#tabs: TabDef[]=[];
-	#tabASyncDataCallback: ((buffer: ArrayBuffer) => void)[]={};
+	#tabs: TabDef[] = [];
+	#tabASyncDataCallback: ((buffer: ArrayBuffer) => void)[] = {};
 
 	#postStatusUpdate(type: string, message: string) {
 		switch (type) {
@@ -61,79 +66,121 @@ export class App extends Component<{}, AppState> {
 		}
 	}
 
-	constructor(props) {
-		super(props);
-		this.state = {
-			serialClient: new SerialClient((location.protocol == "https:" ? "wss://" : "ws://") + location.host + "/ws"),
-			activeTabIndex: 0,
-			lastActiveTabIndex: 0,
-			serverStatus: "Connecting",
-			portStatus: "Closed",
-			operationStatus: "None"
-		};
+	#getTabs(auth: Auth) {
 
-		this.state.serialClient.onConnected(() => {
-			this.setState({ serverStatus: "Connected" });
-			this.state.serialClient.onAsyncData(this.#onAsyncData.bind(this));
-		})
-
-		this.state.serialClient.onSocketClose = (message) => {
-			this.setState({ serverStatus: "Connection closed," + message, portStatus: "Closed" });
-		}
-
-		this.state.serialClient.onSocketError = (message) => {
-			this.setState({ serverStatus: "Connection lost," + message, portStatus: "Closed" });
-		};
-
-		let tabs: TabDef[]=this.#tabs;
+		let tabs = new Array<TabDef>()
 
 		tabs.push({
-			tab: <PortTab postStatusUpdate={this.#postStatusUpdate.bind(this)} serialClient={this.state.serialClient} />,
+			tab: <PortTab auth={auth} postStatusUpdate={this.#postStatusUpdate.bind(this)} serialClient={this.state.serialClient} />,
 			title: "Port",
 			aSyncData: false
 		});
 		tabs.push({
-			tab: <TermTab dataUpdateFunc={(f) => this.#setAsyncDataHandler("Terminal", f)} postStatusUpdate={this.#postStatusUpdate.bind(this)} serialClient={this.state.serialClient} />,
+			tab: <TermTab auth={auth} dataUpdateFunc={(f) => this.#setAsyncDataHandler("Terminal", f)} postStatusUpdate={this.#postStatusUpdate.bind(this)} serialClient={this.state.serialClient} />,
 			title: "Terminal",
 			aSyncData: true
 		});
 		tabs.push({
-			tab: <UploadTab postStatusUpdate={this.#postStatusUpdate.bind(this)} serialClient={this.state.serialClient} />,
+			tab: <UploadTab auth={auth} postStatusUpdate={this.#postStatusUpdate.bind(this)} serialClient={this.state.serialClient} />,
 			title: "Upload",
 			aSyncData: false
 		});
 		tabs.push({
-			tab: <DisplayTab dataUpdateFunc={(f) => this.#setAsyncDataHandler("Display", f)} postStatusUpdate={this.#postStatusUpdate.bind(this)} serialClient={this.state.serialClient} />,
+			tab: <DisplayTab auth={auth} dataUpdateFunc={(f) => this.#setAsyncDataHandler("Display", f)} postStatusUpdate={this.#postStatusUpdate.bind(this)} serialClient={this.state.serialClient} />,
 			title: "Display",
 			aSyncData: true
 		});
 		tabs.push({
-			tab: <SettingsTab postStatusUpdate={this.#postStatusUpdate.bind(this)} serialClient={this.state.serialClient} />,
+			tab: <SettingsTab auth={auth} postStatusUpdate={this.#postStatusUpdate.bind(this)} serialClient={this.state.serialClient} />,
 			title: "Settings",
 			aSyncData: false
 		});
 
+		return tabs;
+	}
+
+	#getLogInTab(errorMessage: string) {
+		let tabs = new Array<TabDef>()
+		tabs.push({
+			tab: <LoginTab errorMessage={errorMessage} loginClick={this.#onLoginClick.bind(this)} />,
+			title: "Login",
+			aSyncData: false,
+		})
+		return tabs;
+	}
+
+	constructor(props) {
+		super(props);
+		this.state = {
+			serialClient: null,
+			activeTabIndex: 0,
+			lastActiveTabIndex: 0,
+			serverStatus: "Connecting",
+			portStatus: "Closed",
+			operationStatus: "None",
+			tabs: this.#getLogInTab('')
+		};
+
+	}
+
+	#socketEventsSetup(client: SerialClient) {
+		client.onConnected(() => {
+			this.setState({ serverStatus: "Connected" });
+			client.onAsyncData(this.#onAsyncData.bind(this));
+		})
+
+		client.onSocketClose = (message) => {
+			this.setState({ serverStatus: "Connection closed," + message, portStatus: "Closed" });
+		}
+
+		client.onSocketError = (message) => {
+			this.setState({ serverStatus: "Connection lost," + message, portStatus: "Closed" });
+		};
 	}
 
 	#setAsyncDataHandler(tabName: string, callback: (buffer: ArrayBuffer) => void) {
 		this.#tabASyncDataCallback[tabName] = callback;
 	}
 
+	#getTokenResponse(response: GetTokenResponse, inital: boolean) {
+		const wsURL = (location.protocol == "https:" ? "wss://" : "ws://") + location.host + "/ws";
+
+		if (response.sucsess) {
+			const sc = new SerialClient(wsURL, response.token);
+			this.#socketEventsSetup(sc);
+			this.setState({
+				authToken: response.token,
+				serialClient: sc,
+			}, () => {
+				this.setState({
+					tabs: this.#getTabs(new Auth(response.token))
+				})
+			})
+
+		} else if (!inital) {
+			this.setState({
+				tabs: this.#getLogInTab('invalid username or password')
+			});
+		}
+	}
+
 	componentDidMount(): void {
-		
+		//initally try with no creds to test if auth is enabled
+		Auth.getToken().then(r => this.#getTokenResponse(r, true))
 	}
 
 	#onAsyncData(buffer: ArrayBuffer) {
-		const aSyncDataCallback = this.#tabASyncDataCallback[this.#tabs[this.state.activeTabIndex].title];
-		if (aSyncDataCallback != undefined ) {
+		const aSyncDataCallback = this.#tabASyncDataCallback[this.state.tabs[this.state.activeTabIndex].title];
+		if (aSyncDataCallback != undefined) {
 			aSyncDataCallback(buffer);
 		}
 	}
 
 	#onTabChange(index: number) {
+		const { tabs } = this.state;
 
-		if (this.#tabs[index].aSyncData != this.#tabs[this.state.activeTabIndex].aSyncData) {
-			if (!this.#tabs[index].aSyncData) {
+		if (tabs[index].aSyncData != tabs[this.state.activeTabIndex].aSyncData) {
+			if (!tabs[index].aSyncData) {
 				this.state.serialClient.stopAsyncRead()
 			} else {
 				this.state.serialClient.startAsyncRead()
@@ -142,20 +189,30 @@ export class App extends Component<{}, AppState> {
 		this.setState({ 'activeTabIndex': index, lastActiveTabIndex: this.state.activeTabIndex });
 	}
 
+	#onLoginClick(user: string, password: string) {
+		Auth.getToken({ user, password })
+			.then(r => this.#getTokenResponse(r, false))
+			.catch(e => this.setState({ tabs: this.#getLogInTab(e) }))
+	}
+
 	render() {
 		const { state } = this;
+		let tabs = state.tabs;
+
 
 		return <div>
 			<div id="tabs">
-				{this.#tabs.map((item, index) => <Tab isSelected={index == state.activeTabIndex}
+				{tabs.map((item, index) => <Tab isSelected={index == state.activeTabIndex}
 					text={item.title} onClick={() => this.#onTabChange(index)} />)}
 			</div>
 			<div id="container">
-				{this.#tabs.map((item, index) => <TabContainer isActive={index == state.activeTabIndex}>
+				{tabs.map((item, index) => <TabContainer isActive={index == state.activeTabIndex}>
 					{item.tab}
 				</TabContainer>)}
 			</div>
-			<StatusBar serverStatus={state.serverStatus} portStatus={state.portStatus} operationStatus={state.operationStatus} />
+			{this.state.tabs.length > 1 ?
+				<StatusBar serverStatus={state.serverStatus} portStatus={state.portStatus} operationStatus={state.operationStatus} />
+				: null}
 		</div>
 	}
 }

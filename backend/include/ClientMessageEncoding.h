@@ -22,6 +22,10 @@
 class MessageEncoding
 {
 public:
+    struct AuthenticateRequest {
+        const char* token;
+        uint8_t length;
+    };
     struct OpenPortRequest
     {
         const char *portName;
@@ -75,6 +79,7 @@ public:
     bool readSetModeRequest(ModeRequest *);
     bool readReadDataRequest(ReadDataRequest *);
     bool readWriteDataRequest(WriteDataRequest *);
+    bool readAuthenticateRequest(AuthenticateRequest* );
 
 private:
     const char *payload;

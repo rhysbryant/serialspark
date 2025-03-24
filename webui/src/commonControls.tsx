@@ -59,7 +59,7 @@ export function CheckBox({ label, value, checked = false, enabled = true, childr
 interface TextInputProps extends InputBaseProps {
     value?: string
     //other controls to put on the same row
-    onChange: (elm: HTMLInputElement) => void
+    onChange?: (elm: HTMLInputElement) => void
     type?: string
     valueList?: string[]
     size?: number
@@ -75,7 +75,7 @@ export function TextInput({ label, type = "text", valueList = [], size = 30, inp
         <label for={"i" + ID} >{label}</label>
         <input type={type} value={value}
             {...(!enabled && { disabled: true })}
-            onChange={(event) => onChange(event.target as HTMLInputElement)}
+            onChange={(event) => onChange && onChange(event.target as HTMLInputElement)}
             {...(hasList && { list: "dl" + ID })}
             size={size}
             ref={inputRef}
@@ -94,4 +94,14 @@ interface FileInputProps extends InputBaseProps {
 
 export function FileInput({ enabled, label, children, onChange }: FileInputProps) {
     return <TextInput type="file" {...{ enabled, label, children, onChange }} />
+}
+
+interface ButtonProps extends InputBaseProps {
+    onClick: (elm: HTMLButtonElement) => void
+}
+
+export function Button({ label, enabled = true, onClick }: ButtonProps) {
+    return <div>
+        <button {...(!enabled && { disabled: true })} onClick={(e) => onClick(e.target as HTMLButtonElement)}>{label}</button>
+    </div>
 }
