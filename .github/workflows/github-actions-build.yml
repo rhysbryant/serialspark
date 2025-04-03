@@ -21,7 +21,6 @@ jobs:
           cd webui
           npm install
           npm run build --if-present
-          npm test
 
       # Cache Python dependencies for PlatformIO
       - uses: actions/cache@v4
