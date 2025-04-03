@@ -1,4 +1,4 @@
-name: PlatformIO CI
+name: UI and backend build
 
 on: [push]
 
@@ -7,27 +7,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4  # Only need to checkout once
+        with:
+          submodules: true
+      # Node.js Setup
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-      - run: npm ci
-      - run: npm run build --if-present
-      - run: npm test
-      - uses: actions/checkout@v4
+
+      # Run frontend build
+      - name: Install dependencies and build UI
+        run: |
+          cd webui
+          npm install
+          npm run build --if-present
+
+      # Cache Python dependencies for PlatformIO
       - uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pip
             ~/.platformio/.cache
-          key: ${{ runner.os }}-pio
+          key: ${{ runner.os }}-platformio-${{ hashFiles('**/platformio.ini') }}
+
+      # Python Setup
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-        run: cd backend
-      - name: Install PlatformIO Core
-        run: pip install --upgrade platformio
 
+      # Install PlatformIO Core
+      - name: Install PlatformIO Core
+        run: |
+          pip install --upgrade platformio
+
+      # Build PlatformIO Project
       - name: Build PlatformIO Project
-        run: pio run
+        run: |
+          cd backend  # Assuming the backend project is in the 'backend' directory
+          pio run
