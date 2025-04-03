@@ -41,7 +41,7 @@ extern "C"
 #include "UserAuthManager.h"
 #include "SimpleHTTPWebSocketClient.h"
 #include <esp_task_wdt.h>
-#include "WebsocketManager.h"
+#include "WebSocketManager.h"
 #include "WifiManager.h"
 #include "CertManager.h"
 #include "EmbeddedFiles.h"
