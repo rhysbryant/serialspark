@@ -20,7 +20,6 @@
 #include "mbedtls/ctr_drbg.h"
 #include "esp_log.h"
 #include "common.h"
-#include "Utility.h"
 
 void UserAuthSessionManager::initSessionGenerator()
 {
