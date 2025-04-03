@@ -8,7 +8,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4  # Only need to checkout once
-
+        with:
+          submodules: true
       # Node.js Setup
       - name: Use Node.js
         uses: actions/setup-node@v4
