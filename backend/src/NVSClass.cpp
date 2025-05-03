@@ -14,7 +14,6 @@
  You should have received a copy of the GNU General Public License
  along with serialspark. If not, see <https://www.gnu.org/licenses/>.
  */
-#include "NVS.h"
 #include <nvs_flash.h>
 #include <nvs.h>
 #include "NVSClass.h"
