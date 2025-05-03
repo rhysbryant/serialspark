@@ -147,7 +147,7 @@ export class WifiSettingsForm extends Component<WifiSettingsProps, WifiSettingsS
                 <summary>Virtual Access Point {APStatusInfo}</summary>
                 <div class=" form-v" >
                     <TextInput size={16} label="SSID" value={this.state.WIFIvirtualAccessPoint?.name} onChange={(elm: HTMLInputElement) => this.#patchWIFIField(true, "name", elm.value)} />
-                    <DropDown label="Security" selectedItem={this.state.WIFIvirtualAccessPoint?.securityType} items={this.state.WIFIvirtualAccessPoint.supportedSecurityTypes ?? []} onChange={(val) => this.#patchWIFIField(true, "securityType", val)} />
+                    <DropDown label="Security" selectedItem={this.state.WIFIvirtualAccessPoint?.securityType} items={this.state.WIFIvirtualAccessPoint.supportedSecurityTypes ?? []} onChange={elm => this.#patchWIFIField(true, "securityType", elm.value)} />
                     <TextInput size={16} type="password" label="Passphrase" onChange={(elm: HTMLInputElement) => this.#patchWIFIField(true, "psk", elm.value)} />
                     <CheckBox label="Always Enabled" onChange={() => { }} />
                     <Button onClick={this.#onSaveClick.bind(this)} label="save" />

@@ -105,8 +105,8 @@ export default class DisplayTab extends AbstractTab<DisplayTabState> {
         this.#addRow();
     }
 
-    #onDisplayModeSelectionChange(value) {
-        let displayMode = this.#displayModeMap[value];
+    #onDisplayModeSelectionChange(elm: HTMLSelectElement) {
+        let displayMode = this.#displayModeMap[elm.value];
 
         if (this.#displayMode != displayMode) {
             this.#clearTable();

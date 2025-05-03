@@ -94,6 +94,10 @@ div.tab:hover,
 	margin: 5px;
 }
 
+input.input-error {
+ border: red 1px solid;
+}
+
 div.form-v div.form-message{
 	display: block;
 	padding: 5px;

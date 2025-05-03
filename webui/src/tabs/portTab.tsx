@@ -171,10 +171,10 @@ export class PortTab extends AbstractTab<State> {
         //<DropDown onChange={(value) => this.#onChange("bandRate", value)} label="Band Rate" items={this.#bandRateList} enabled={!state.pendingOperation} />
         return <div class="form-v">
 
-            <DropDown onChange={(value) => this.#onChange("port", value)} label="Port" items={state.portList} enabled={!state.pendingOperation && !state.connected} />
+            <DropDown onChange={elm => this.#onChange("port", elm.value)} label="Port" items={state.portList} enabled={!state.pendingOperation && !state.connected} />
             <TextInput type="number" value={state.bandRateValue} size={5} onChange={(elm) => this.#onChange("bandRate", elm.value)} label="Band Rate" valueList={this.#bandRateList} enabled={!state.pendingOperation} />
-            <DropDown onChange={(value) => this.#onChange("parity", value)} label="Parity" items={this.#parityList} enabled={!state.pendingOperation} />
-            <DropDown onChange={(value) => this.#onChange("dataBits", value)} label="Data Bits" items={this.#dataBitsList} enabled={!state.pendingOperation} />
+            <DropDown onChange={elm => this.#onChange("parity", elm.value)} label="Parity" items={this.#parityList} enabled={!state.pendingOperation} />
+            <DropDown onChange={elm => this.#onChange("dataBits", elm.value)} label="Data Bits" items={this.#dataBitsList} enabled={!state.pendingOperation} />
 
             <div>
                 <button onClick={() => this.#openButtonClick()}>{state.connected ? "Close" : "Open"}</button>

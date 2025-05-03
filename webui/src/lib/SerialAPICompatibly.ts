@@ -47,15 +47,7 @@ export default class SerialAPICompatibly {
 
     get readable(): ReadableStream {
         const sc= this.#serialClient
-        return new ReadableStream<Uint8Array>({
-            start(controller) {
-                sc.onAsyncData((data) => controller.enqueue(new Uint8Array(data)))
-                sc.startAsyncRead();
-            },
-            pull(controller: ReadableStreamDefaultController<Uint8Array>){
-                
-            }        
-        });
+        return sc.getReaderStream();
     }
 
     get writable(): WritableStream {

@@ -39,9 +39,26 @@ public:
     // load json from a request body
     // this will write a bad request response if unable to parse
     static Json loadJsonFromRequest(Request *req, Response *resp);
+    /*
+    * serializes the jsin object structure and writes it
+    * to the response object 
+    */
     bool writeJsonToResponse(Response *resp);
-
+    /*
+    * retrives a number
+    * returns false if the named key does not exist or not a number type
+    */
+    bool getNumberField(const char *key, double *val);
+    /*
+    * retrives a string 
+    * returns 0 if the named key does not exist or wrong type
+    */
     char *getStringField(const char *key);
+    /*
+    * retrives a boolean vale into val
+    * returns false if the named key does not exist or wrong type
+    */
+    bool getBoolField(const char *key, bool *val);
     /*
      * add a string field
      */
@@ -58,6 +75,35 @@ public:
      * add an empty object and return the new instance
      */
     Json addObject(const char *key);
+    /**
+     * add an empty array and return the new instance
+     */
+    Json addArray(const char *key);
+
+    /**
+     * creates an array type Object
+     */
+    static Json createArray();
+    /**
+     * creates a string type Object
+     * generally only use for for top level or use with addArrayItem()
+     */
+    static Json createString(const char *value);
+    /**
+     * creates a number type Object
+     * generally only use for for top level or use with addArrayItem()
+     */
+    static Json createNumber(double value);
+    /**
+     * creates a bool type Object
+     * generally only use for for top level or use with addArrayItem()
+     */
+    static Json createBool(bool value);
+
+    bool addArrayItem(Json &item);
+
+    Json addArrayObjectItem();
+
     /**
      * return a new instance with the named sub object
      * if the object does not exist isNull() will return true

@@ -27,6 +27,35 @@ char *Json::getStringField(const char *key)
     return cJSON_GetStringValue(obj);
 }
 
+bool Json::getNumberField(const char *key, double *val)
+{
+    auto obj = cJSON_GetObjectItemCaseSensitive(json, key);
+    if (obj == nullptr)
+    {
+        return false;
+    }
+
+    if (!cJSON_IsNumber(obj))
+    {
+        return false;
+    }
+
+    *val = cJSON_GetNumberValue(obj);
+    return true;
+}
+
+bool Json::getBoolField(const char *key, bool *val)
+{
+    auto obj = cJSON_GetObjectItemCaseSensitive(json, key);
+    if (obj == nullptr)
+    {
+        return false;
+    }
+
+    *val = cJSON_IsTrue(obj);
+    return true;
+}
+
 void Json::addField(const char *key, const char *value)
 {
     auto tmp = cJSON_CreateStringReference(value);
@@ -102,5 +131,48 @@ Json Json::getObject(const char *key)
 
 Json Json::addObject(const char *key)
 {
+
     return cJSON_AddObjectToObject(json, key);
+}
+
+Json Json::addArray(const char *key)
+{
+    return cJSON_AddArrayToObject(json, key);
+}
+
+bool Json::addArrayItem(Json &item)
+{
+    return cJSON_AddItemReferenceToArray(json, item.json);
+}
+
+Json Json::addArrayObjectItem()
+{
+
+    auto obj = cJSON_CreateObject();
+    if (cJSON_AddItemToArray(json, obj))
+    {
+        return obj;
+    }
+    cJSON_free(obj);
+    return 0;
+}
+
+Json Json::createArray()
+{
+    return cJSON_CreateArray();
+}
+
+Json Json::createString(const char *value)
+{
+    return cJSON_CreateStringReference(value);
+}
+
+Json Json::createNumber(double value)
+{
+    return cJSON_CreateNumber(value);
+}
+
+Json Json::createBool(bool value)
+{
+    return cJSON_CreateBool(value);
 }

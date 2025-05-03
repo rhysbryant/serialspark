@@ -26,7 +26,7 @@ extern "C"
 #include "freertos/semphr.h"
 #include "driver/uart.h"
 }
-//ESP UART Port Wrapper
+// ESP UART Port Wrapper
 class Port
 {
 private:
@@ -42,27 +42,35 @@ private:
     static void readLoop(void *arg);
     bool ready;
     std::function<void(char *, uint16_t)> callback;
+
 public:
-
-
     const uart_port_t portNum;
     const char *portName;
     static const int reservedBufferHeadSpace = 1;
+    int txIONum;
+    int rxIONum;
+    int rtsIONum;
+    int ctsIONum;
+    bool GPIOPinChangePending;
+
     Port(const uart_port_t portNum, const char *name, int RXPin, int TXPin);
-    
+
+    esp_err_t setGPIOPins(int txIONum, int rxIONum, int rtsIONum, int ctsIONum);
+    esp_err_t applyGPIOPinChange(int txIONum, int rxIONum, int rtsIONum, int ctsIONum);
+
     int read(char *buf, uint32_t bufLen, int timeout);
-    
+
     int write(char *src, uint32_t len);
-    
+
     void startContinuesRead();
-    
+
     void stopContinuesRead();
 
     bool setDataBitsLength(uint8_t size);
-    
+
     bool setBandRate(uint32_t value);
 
-    void setContinuesReadOnDataCallback(std::function<void(char *, uint16_t)>  cb)
+    void setContinuesReadOnDataCallback(std::function<void(char *, uint16_t)> cb)
     {
         callback = cb;
     };

@@ -44,6 +44,7 @@ extern "C"
 #include "WebSocketManager.h"
 #include "WifiManager.h"
 #include "CertManager.h"
+#include "UARTPortConfigManager.h"
 #include "EmbeddedFiles.h"
 // using SimpleHTTP::Server;
 using SimpleHTTP::SecureServer;
@@ -145,6 +146,7 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
     ESP_ERROR_CHECK(esp_wifi_start());
 
+    UARTPortConfigManager::init();
 
     xTaskCreate(http_server_thread, "Server::loop()", configMINIMAL_STACK_SIZE * 20, nullptr, 2, nullptr);
 
@@ -159,6 +161,7 @@ void app_main(void)
     SimpleHTTP::Router::addHandler("/tls",CertManager::certGETConfigRequest);
     SimpleHTTP::Router::addHandler("/auth",UserAuthManager::getTokenloginPOSTRequest);
     SimpleHTTP::Router::addHandler("/auth/update",UserAuthManager::updateLoginPOSTRequest);
+    SimpleHTTP::Router::addHandler("/uart/config",UARTPortConfigManager::portConfigRequest);
 
     SimpleHTTP::Router::addHandler("/ws", [](SimpleHTTP::Request *req, SimpleHTTP::Response *resp)
                                    {

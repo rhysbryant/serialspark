@@ -280,7 +280,7 @@ export default class UploadTab extends AbstractTab<UploadState> {
 
         return <div class="form-v">
             <DropDown enabled={!state.uploadInProgress} label="Upload Type" items={this.#uploadTypes}
-                onChange={(value) => { this.#uploadTypeOnChange(value) }} />
+                onChange={elm => { this.#uploadTypeOnChange(elm.value) }} />
             <div>
                 <label >File</label>
                 <input id="fileUploadInput" {...(state.uploadInProgress && { disabled: true })} type="file" />

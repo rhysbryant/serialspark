@@ -19,7 +19,7 @@
 #include "Json.h"
 #include "esp_log.h"
 #include <nvs_flash.h>
-// #include "esp_dis.h"
+#include "NVSClass.h"
 #include "mbedtls/md.h"
 
 bool UserAuthManager::userNameStringIsValid(const char *name)
@@ -115,8 +115,8 @@ bool UserAuthManager::checkUserCreds(const User *user)
         return false;
     }
 
-    nvs_handle_t nvsHandle = 0;
-    auto result = nvs_open("users", NVS_READONLY, &nvsHandle);
+    NVS userCredsStore("users");
+    auto result = userCredsStore.openForRead();
     if (result != ESP_OK)
     {
         ESP_LOGE(__FUNCTION__, "nvs_open failed error %d", (int)result);
@@ -126,8 +126,7 @@ bool UserAuthManager::checkUserCreds(const User *user)
     char buffer[255] = "";
     size_t length = 33;
 
-    result = nvs_get_blob(nvsHandle, user->userName, buffer, &length);
-    nvs_close(nvsHandle);
+    result = userCredsStore.get(user->userName, buffer, length);
 
     if (result != ESP_OK)
     {
@@ -157,8 +156,8 @@ bool UserAuthManager::storeUserCreds(const User *user)
         return false;
     }
 
-    nvs_handle_t nvsHandle = 0;
-    auto result = nvs_open("users", NVS_READWRITE, &nvsHandle);
+    NVS userCredStore("users");
+    auto result = userCredStore.openForWrite();
     if (result != ESP_OK)
     {
         ESP_LOGE(__FUNCTION__, "nvs_open failed error %d", (int)result);
@@ -172,17 +171,15 @@ bool UserAuthManager::storeUserCreds(const User *user)
         return false;
     }
 
-    result = nvs_set_blob(nvsHandle, user->userName, hmac, sizeof(hmac));
+    result = userCredStore.set(user->userName, (char *)hmac, (size_t)sizeof(hmac));
 
     if (result != ESP_OK)
     {
         ESP_LOGE(__FUNCTION__, "set str failed error %d", (int)result);
-        nvs_close(nvsHandle);
         return false;
     }
 
-    result = nvs_commit(nvsHandle);
-    nvs_close(nvsHandle);
+    result = userCredStore.commit();
     if (result != ESP_OK)
     {
         ESP_LOGE(__FUNCTION__, "nvs commit failed error %d", (int)result);
@@ -312,8 +309,8 @@ void UserAuthManager::updateLoginPOSTRequest(Request *req, Response *resp)
 
 int UserAuthManager::getUserCount()
 {
-    nvs_handle_t nvsHandle = 0;
-    auto result = nvs_open("users", NVS_READONLY, &nvsHandle);
+    NVS nvs("users");
+    auto result = nvs.openForRead();
     if (result != ESP_OK)
     {
         ESP_LOGE(__FUNCTION__, "nvs_open failed error %d", (int)result);
@@ -321,8 +318,7 @@ int UserAuthManager::getUserCount()
     }
 
     size_t count = -1;
-    result = nvs_get_used_entry_count(nvsHandle, &count);
-    nvs_close(nvsHandle);
+    result = nvs.getEntryCount(count);
 
     return count;
 }

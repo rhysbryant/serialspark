@@ -44,6 +44,36 @@ export interface GetTokenResponse {
     sucsess: boolean
 }
 
+export interface UARTConfig {
+    name: string
+    enabled: boolean
+    UARTNum: number;
+    TXIONum: number;
+    RXIONum: number;
+    RTSIONum: number;
+    CTSIONum: number;
+    defaults?: UARTConfig
+}
+
+export interface UARTConfigErrorResonse {
+    message: string
+    invalidFields: string[]
+}
+
+class SettingsAPIBase {
+    #auth: Auth
+
+    get #defaulOptions() {
+        return {
+            headers: this.#auth.authHeader
+        }
+    }
+
+    constructor(auth: Auth) {
+        this.#auth = auth;
+    }
+}
+
 export class Auth {
     URL: string
     #token: string
@@ -248,4 +278,52 @@ export class CertSettings {
         });
     }
 
+}
+/**
+ * UART IO Config
+ */
+export class UARTSettings {
+    #auth: Auth
+
+    get #defaulOptions() {
+        return {
+            headers: this.#auth.authHeader
+        }
+    }
+
+    constructor(auth: Auth) {
+        this.#auth = auth;
+    }
+    /**
+     * get the UART IO configuration 
+     */
+    async getUARTConfig() {
+        return new Promise<UARTConfig[]>((resolve, reject) => {
+            fetch(this.#auth.URL + "/uart/config", this.#defaulOptions).then(result => {
+                if (result.ok) {
+                    result.json().then(obj => {
+                        resolve(obj)
+                    }).catch(reason => reject(reason));
+                }
+            }).catch(reason => reject(reason));
+        })
+    }
+    /**
+     * update the IO config for a spific UART  
+     * @param uartcfg the new UART Config
+     */
+    async setUARTConfig(uartcfg: UARTConfig) {
+        return new Promise<void>((resolve, reject) => {
+            fetch(this.#auth.URL + "/uart/config", { method: "PUT", headers: this.#auth.authHeader, body: JSON.stringify(uartcfg) }).then(result => {
+                if (!result.ok && result.status == 400) {
+
+                    result.json()
+                        .then(obj => reject(obj as UARTConfigErrorResonse))
+                        .catch(err => reject(err))
+                } else {
+                    resolve();
+                }
+            }).catch(reason => reject(reason));
+        })
+    }
 }

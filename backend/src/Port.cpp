@@ -17,22 +17,73 @@
 
 #include "Port.h"
 #include "esp_log.h"
-Port::Port(uart_port_t _portNum, const char *_name, int RXPin, int TXPin) : portNum(_portNum), portName(_name)
+Port::Port(uart_port_t _portNum, const char *_name, int RXPin, int TXPin) : portNum(_portNum), portName(_name), txIONum(TXPin), rxIONum(RXPin), rtsIONum(-1), ctsIONum(-1)
 {
     ready = false;
     readLock = xSemaphoreCreateMutex();
-    if (_portNum)
+    GPIOPinChangePending = false;
+}
+
+
+esp_err_t Port::setGPIOPins(int txIONum, int rxIONum, int rtsIONum, int ctsIONum){
+    this->txIONum = txIONum;
+    this->rxIONum = rxIONum;
+    this->rtsIONum = rtsIONum;
+    this->ctsIONum = ctsIONum;
+    GPIOPinChangePending = true;
+
+    return true;
+}
+
+esp_err_t Port::applyGPIOPinChange(int txIONum, int rxIONum, int rtsIONum, int ctsIONum)
+{
+    auto result = uart_set_pin(portNum,
+                                txIONum,
+                               rxIONum,
+                                rtsIONum,
+                                ctsIONum) == ESP_OK;
+
+    if (result)
     {
-        uart_set_pin(_portNum, TXPin, RXPin, -1, -1);
+        this->txIONum = txIONum;
+        this->rxIONum = rxIONum;
+        this->rtsIONum = rtsIONum;
+        this->ctsIONum = ctsIONum;
+        GPIOPinChangePending = false;
     }
+
+    return result == ESP_OK;
 }
 
 bool Port::init()
 {
     if (!ready)
     {
+
+    // Configure UART0 parameters
+    uart_config_t uart_config = {
+        .baud_rate = 9600,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    };
+    
+    // Set UART0 parameters
+    uart_param_config(portNum, &uart_config);
+
+        if(GPIOPinChangePending && !uart_set_pin(portNum,
+            this->txIONum,
+            this->rxIONum,
+            this->rtsIONum,
+            this->ctsIONum) == ESP_OK){
+            ESP_LOGE(__FUNCTION__,"uart GPIO pin setup failed try changing the GPIO pins in settings");
+            return false; 
+        }
+        GPIOPinChangePending = false;
+
         auto result = uart_is_driver_installed(portNum) || uart_driver_install(portNum, 1024 * 2, 0, 20, 0, 0) == ESP_OK;
-        ESP_LOGI("SETUP","result %d",(int)result);
+        ESP_LOGI("SETUP", "result %d", (int)result);
 
         if (result && xTaskCreate(Port::readLoop, "Port::loop()", configMINIMAL_STACK_SIZE * 5, this, 2, &readTask) == pdPASS)
         {
